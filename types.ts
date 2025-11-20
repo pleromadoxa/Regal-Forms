@@ -28,9 +28,19 @@ export interface FormField {
   price?: number;
   currency?: string;
   productImage?: string;
+  productDescription?: string;
   min?: number;
   max?: number;
   step?: number;
+  
+  // Payment Configurations
+  apiKey?: string; // Stripe Publishable Key or PayPal Client ID
+  paymentMethods?: string[]; // ['visa', 'mastercard', 'amex', 'paypal']
+  environment?: 'sandbox' | 'live';
+  
+  // File Upload Configurations
+  allowedFileTypes?: string[]; // ['.pdf', '.jpg', '.png']
+  maxFileSizeMB?: number;
 }
 
 export interface FormStats {

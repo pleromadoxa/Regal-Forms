@@ -10,8 +10,10 @@ const FormPublicPage: React.FC = () => {
   
   const [form, setForm] = useState<GeneratedForm | null>(null);
   const [formId, setFormId] = useState<string | null>(null);
+  const [formOwnerId, setFormOwnerId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isFormClosed, setIsFormClosed] = useState(false);
 
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [formValues, setFormValues] = useState<Record<string, string>>({});
@@ -65,46 +67,57 @@ const FormPublicPage: React.FC = () => {
           setLoading(true);
           try {
               // Try to find by slug first
-              const q = query(collection(db, 'forms'), where('slug', '==', slug), where('status', '==', 'published'));
+              const q = query(collection(db, 'forms'), where('slug', '==', slug));
               const slugSnapshot = await getDocs(q);
 
-              let fetchedForm = null;
+              let fetchedForm: any = null;
               let fetchedId = null;
 
               if (!slugSnapshot.empty) {
-                  fetchedForm = slugSnapshot.docs[0].data() as GeneratedForm;
+                  fetchedForm = slugSnapshot.docs[0].data();
                   fetchedId = slugSnapshot.docs[0].id;
               } else {
                   // Fallback: Try ID
                   const docRef = doc(db, 'forms', slug);
                   const docSnap = await getDoc(docRef);
-                  if (docSnap.exists() && docSnap.data().status === 'published') {
-                      fetchedForm = docSnap.data() as GeneratedForm;
+                  if (docSnap.exists()) {
+                      fetchedForm = docSnap.data();
                       fetchedId = docSnap.id;
                   }
               }
 
               if (fetchedForm && fetchedId) {
-                  setForm(fetchedForm);
-                  setFormId(fetchedId);
-                  
-                  // Increment View Count
-                  await updateDoc(doc(db, 'forms', fetchedId), {
-                      'stats.views': increment(1)
-                  });
+                  if (fetchedForm.status === 'completed') {
+                      setIsFormClosed(true);
+                      setForm(fetchedForm); // Still set form to show title if needed
+                  } else if (fetchedForm.status === 'published') {
+                      setForm(fetchedForm as GeneratedForm);
+                      setFormId(fetchedId);
+                      
+                      if (fetchedForm.userId) {
+                          setFormOwnerId(fetchedForm.userId);
+                      }
 
-                  // Setup Display
-                  let fieldsToRender = [...fetchedForm.fields];
-                  if (fetchedForm.shuffleQuestions) {
-                      fieldsToRender = fieldsToRender.sort(() => Math.random() - 0.5);
+                      // Increment View Count
+                      await updateDoc(doc(db, 'forms', fetchedId), {
+                          'stats.views': increment(1)
+                      });
+
+                      // Setup Display
+                      let fieldsToRender = [...fetchedForm.fields];
+                      if (fetchedForm.shuffleQuestions) {
+                          fieldsToRender = fieldsToRender.sort(() => Math.random() - 0.5);
+                      }
+                      setDisplayFields(fieldsToRender);
+                      const initialVisibility: Record<string, boolean> = {};
+                      fetchedForm.fields.forEach((f: FormField) => initialVisibility[f.id] = true);
+                      setVisibleFields(initialVisibility);
+                  } else {
+                       // Draft or other status
+                       setError('Form not found or not published.');
                   }
-                  setDisplayFields(fieldsToRender);
-                  const initialVisibility: Record<string, boolean> = {};
-                  fetchedForm.fields.forEach(f => initialVisibility[f.id] = true);
-                  setVisibleFields(initialVisibility);
-
               } else {
-                  setError('Form not found or not published.');
+                  setError('Form not found.');
               }
           } catch (err: any) {
               console.error(err);
@@ -118,7 +131,7 @@ const FormPublicPage: React.FC = () => {
 
   // Logic Engine
   useEffect(() => {
-      if (!form) return;
+      if (!form || isFormClosed) return;
       const newVisibility: Record<string, boolean> = {};
       form.fields.forEach(field => {
           let shouldBeVisible = true;
@@ -155,14 +168,14 @@ const FormPublicPage: React.FC = () => {
 
       const visibleInputFields = Object.keys(newVisibility).filter(id => {
           const field = form.fields.find(f => f.id === id);
-          return newVisibility[id] && field && !['html', 'quote', 'youtube', 'countdown'].includes(field.type);
+          return newVisibility[id] && field && !['html', 'quote', 'youtube', 'countdown', 'stripe', 'paypal'].includes(field.type);
       });
       const filledCount = visibleInputFields.filter(id => formValues[id] && formValues[id].trim() !== "").length;
       const totalCount = visibleInputFields.length;
       const newProgress = totalCount === 0 ? 0 : Math.round((filledCount / totalCount) * 100);
       setProgress(newProgress);
 
-  }, [formValues, form]);
+  }, [formValues, form, isFormClosed]);
 
   const handleInputChange = (fieldId: string, value: string) => {
       setFormValues(prev => ({ ...prev, [fieldId]: value }));
@@ -198,6 +211,40 @@ const FormPublicPage: React.FC = () => {
               'stats.responses': increment(1)
           });
 
+          // Trigger Integrations (Zapier)
+          if (formOwnerId) {
+              const triggerIntegrations = async () => {
+                  try {
+                      const userIntegrationsRef = doc(db, 'user_integrations', formOwnerId);
+                      const userIntegrationsSnap = await getDoc(userIntegrationsRef);
+                      
+                      if (userIntegrationsSnap.exists()) {
+                          const integrations = userIntegrationsSnap.data();
+                          
+                          // Zapier
+                          if (integrations.zapier?.enabled && integrations.zapier.settings?.webhookUrl) {
+                              fetch(integrations.zapier.settings.webhookUrl, {
+                                  method: 'POST',
+                                  body: JSON.stringify({
+                                      formId,
+                                      formTitle: form.title,
+                                      submittedAt: new Date().toISOString(),
+                                      data: formValues
+                                  }),
+                                  mode: 'no-cors', 
+                                  headers: {
+                                      'Content-Type': 'application/json' 
+                                  }
+                              }).catch(err => console.warn("Zapier trigger failed", err));
+                          }
+                      }
+                  } catch (e) {
+                      console.error("Error triggering integrations", e);
+                  }
+              };
+              triggerIntegrations();
+          }
+
           setIsSubmitted(true);
           window.scrollTo({ top: 0, behavior: 'smooth' });
       } catch (err) {
@@ -219,9 +266,30 @@ const FormPublicPage: React.FC = () => {
       );
   }
 
+  // Form Closed State
+  if (isFormClosed) {
+       return (
+          <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark p-4 font-display">
+              <div className="text-center max-w-md bg-white dark:bg-white/5 p-10 rounded-xl border border-black/10 dark:border-white/10 shadow-lg">
+                  <div className="size-16 rounded-full bg-gray-100 dark:bg-white/10 flex items-center justify-center mx-auto mb-6">
+                      <span className="material-symbols-outlined text-4xl text-gray-400 dark:text-white/40">lock</span>
+                  </div>
+                  <h2 className="text-2xl font-black mb-2">{form?.title || 'Form'}</h2>
+                  <div className="h-1 w-12 bg-primary mx-auto mb-4 rounded-full"></div>
+                  <p className="text-black/60 dark:text-white/60 mb-6 text-lg">
+                      This form is no longer accepting responses.
+                  </p>
+                  <p className="text-sm text-black/40 dark:text-white/40">
+                      Please contact the form owner if you think this is a mistake.
+                  </p>
+              </div>
+          </div>
+      );
+  }
+
   if (error) {
       return (
-          <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark p-4">
+          <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark p-4 font-display">
               <div className="text-center max-w-md bg-white dark:bg-white/5 p-8 rounded-xl border border-black/10 dark:border-white/10 shadow-lg">
                   <span className="material-symbols-outlined text-5xl text-red-500 mb-4">error</span>
                   <h2 className="text-2xl font-bold mb-2">Oops!</h2>
@@ -292,6 +360,51 @@ const FormPublicPage: React.FC = () => {
                             );
                         }
 
+                        if (field.type === 'product') {
+                             const isSelected = formValues[field.id] === 'selected';
+                             return (
+                                 <div key={field.id} 
+                                      className={`flex flex-col sm:flex-row gap-4 p-4 rounded-xl border-2 transition-all cursor-pointer animate-fade-in group relative overflow-hidden ${isSelected ? 'border-[#ff9a00] bg-[#ff9a00]/5' : 'border-[#e5e7eb] dark:border-[#374151] hover:border-[#ff9a00]/50'}`}
+                                      onClick={() => handleInputChange(field.id, isSelected ? '' : 'selected')}
+                                 >
+                                     {isSelected && (
+                                         <div className="absolute top-0 right-0 bg-[#ff9a00] text-white px-3 py-1 rounded-bl-lg font-bold text-xs flex items-center gap-1 z-10">
+                                             <span className="material-symbols-outlined text-sm">check</span> Selected
+                                         </div>
+                                     )}
+                                     {field.productImage && (
+                                         <div className="sm:w-32 h-32 shrink-0 rounded-lg overflow-hidden bg-black/5 dark:bg-white/5">
+                                             <img src={field.productImage} alt={field.label} className="w-full h-full object-cover" />
+                                         </div>
+                                     )}
+                                     <div className="flex flex-col justify-between flex-1 py-1">
+                                         <div>
+                                             <h3 className="font-bold text-lg">{field.label}</h3>
+                                             <p className="text-sm text-black/60 dark:text-white/60 mt-1 leading-relaxed">{field.productDescription}</p>
+                                         </div>
+                                         
+                                         {/* Payment Methods Icons */}
+                                         {field.paymentMethods && field.paymentMethods.length > 0 && (
+                                             <div className="flex gap-2 mt-2">
+                                                  {field.paymentMethods.includes('card') && <span className="material-symbols-outlined text-sm text-black/50 dark:text-white/50" title="Credit Card">credit_card</span>}
+                                                  {field.paymentMethods.includes('paypal') && <span className="material-symbols-outlined text-sm text-black/50 dark:text-white/50" title="PayPal">account_balance_wallet</span>}
+                                                  {field.paymentMethods.includes('cash') && <span className="material-symbols-outlined text-sm text-black/50 dark:text-white/50" title="Cash">payments</span>}
+                                             </div>
+                                         )}
+
+                                         <div className="mt-4 flex items-center justify-between">
+                                             <div className="text-xl font-black text-[#0d253f] dark:text-white">
+                                                {field.price} <span className="text-sm font-medium text-black/50 dark:text-white/50">{field.currency || 'USD'}</span>
+                                             </div>
+                                             <button type="button" className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${isSelected ? 'bg-[#ff9a00]/20 text-[#ff9a00]' : 'bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20'}`}>
+                                                 {isSelected ? 'Remove' : 'Select'}
+                                             </button>
+                                         </div>
+                                     </div>
+                                 </div>
+                             )
+                        }
+
                         if (field.type === 'youtube') {
                              const embedUrl = getYoutubeEmbedUrl(field.videoUrl);
                              return (
@@ -320,6 +433,69 @@ const FormPublicPage: React.FC = () => {
                                     </div>
                                 </div>
                             );
+                        }
+
+                        // Payment Fields (Updated Visuals)
+                        if (field.type === 'stripe') {
+                             return (
+                                 <div key={field.id} className="animate-fade-in">
+                                     <label className="text-base font-medium mb-2 block">{field.label}</label>
+                                     <div className="p-4 rounded-lg border border-[#e5e7eb] dark:border-[#374151] bg-[#f5f5f5] dark:bg-[#0d253f]">
+                                         <div className="flex gap-2 mb-3">
+                                            {/* Dynamic Card Icons based on Settings */}
+                                            {(!field.paymentMethods || field.paymentMethods.length === 0 || field.paymentMethods.includes('visa')) && (
+                                                <div className="h-8 w-12 bg-white/50 rounded flex items-center justify-center text-[10px] font-bold tracking-tighter text-blue-800">VISA</div>
+                                            )}
+                                            {(!field.paymentMethods || field.paymentMethods.length === 0 || field.paymentMethods.includes('mastercard')) && (
+                                                <div className="h-8 w-12 bg-white/50 rounded flex items-center justify-center text-[10px] font-bold tracking-tighter text-red-600">MC</div>
+                                            )}
+                                            {(field.paymentMethods?.includes('amex')) && (
+                                                <div className="h-8 w-12 bg-white/50 rounded flex items-center justify-center text-[10px] font-bold tracking-tighter text-blue-500">AMEX</div>
+                                            )}
+                                         </div>
+                                         <div className="grid gap-3">
+                                             <input disabled type="text" placeholder="Card number" className="w-full p-3 rounded border dark:border-white/10 bg-white dark:bg-black/20" />
+                                             <div className="flex gap-3">
+                                                 <input disabled type="text" placeholder="MM / YY" className="w-1/2 p-3 rounded border dark:border-white/10 bg-white dark:bg-black/20" />
+                                                 <input disabled type="text" placeholder="CVC" className="w-1/2 p-3 rounded border dark:border-white/10 bg-white dark:bg-black/20" />
+                                             </div>
+                                         </div>
+                                         <button disabled type="button" className="w-full mt-3 py-3 bg-[#635BFF] text-white font-bold rounded-lg opacity-90 flex items-center justify-center gap-2">
+                                             Pay Now {field.price ? `(${field.price} ${field.currency})` : ''}
+                                         </button>
+                                     </div>
+                                 </div>
+                             )
+                        }
+
+                        if (field.type === 'paypal') {
+                            return (
+                                <div key={field.id} className="animate-fade-in">
+                                    <button type="button" disabled className="w-full py-3 rounded-lg bg-[#FFC439] text-black font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
+                                        <span className="material-symbols-outlined">account_balance_wallet</span> 
+                                        Pay with PayPal {field.price ? `(${field.price} ${field.currency})` : ''}
+                                    </button>
+                                </div>
+                            )
+                        }
+
+                        if (field.type === 'file' || field.type === 'image') {
+                             return (
+                                 <div key={field.id} className="flex flex-col gap-2 animate-fade-in">
+                                     <label className="text-base font-medium">
+                                        {field.label} {field.required && <span className="text-red-500">*</span>}
+                                     </label>
+                                     <div className="relative w-full">
+                                        <input type="file" accept={field.allowedFileTypes ? field.allowedFileTypes.join(',') : (field.type === 'image' ? "image/*" : "*")} required={field.required} className="w-full rounded-lg border border-[#e5e7eb] dark:border-[#374151] bg-[#f5f5f5] dark:bg-[#0d253f] p-3 text-base outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#ff9a00]/10 file:text-[#ff9a00] hover:file:bg-[#ff9a00]/20" />
+                                    </div>
+                                    {(field.maxFileSizeMB || field.allowedFileTypes) && (
+                                        <p className="text-xs text-[#6b7280] dark:text-[#9ca3af] italic mt-1">
+                                            {field.maxFileSizeMB ? `Max size: ${field.maxFileSizeMB}MB. ` : ''}
+                                            {field.allowedFileTypes ? `Allowed: ${field.allowedFileTypes.join(', ')}` : ''}
+                                        </p>
+                                    )}
+                                 </div>
+                             )
                         }
 
                         return (
@@ -363,10 +539,6 @@ const FormPublicPage: React.FC = () => {
                                             <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-xs opacity-50">expand_more</span>
                                         </div>
                                         <input type="tel" className="flex-1 rounded-lg border border-[#e5e7eb] dark:border-[#374151] bg-[#f5f5f5] dark:bg-[#0d253f] p-3 text-base outline-none focus:border-[#ff9a00] focus:ring-2 focus:ring-[#ff9a00]/50 transition-all" placeholder={field.placeholder} required={field.required} value={formValues[field.id] || ''} onChange={(e) => handleInputChange(field.id, e.target.value)} />
-                                    </div>
-                                ) : (field.type === 'file' || field.type === 'image') ? (
-                                    <div className="relative w-full">
-                                        <input type="file" accept={field.type === 'image' ? "image/*" : "*"} required={field.required} className="w-full rounded-lg border border-[#e5e7eb] dark:border-[#374151] bg-[#f5f5f5] dark:bg-[#0d253f] p-3 text-base outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#ff9a00]/10 file:text-[#ff9a00] hover:file:bg-[#ff9a00]/20" />
                                     </div>
                                 ) : (
                                     <input type={field.type} className="w-full rounded-lg border border-[#e5e7eb] dark:border-[#374151] bg-[#f5f5f5] dark:bg-[#0d253f] p-3 text-base outline-none focus:border-[#ff9a00] focus:ring-2 focus:ring-[#ff9a00]/50 transition-all" placeholder={field.placeholder} required={field.required} value={formValues[field.id] || ''} minLength={field.minLength} maxLength={field.maxLength} onChange={(e) => handleInputChange(field.id, e.target.value)} />

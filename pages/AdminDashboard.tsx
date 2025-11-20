@@ -9,7 +9,7 @@ import { GoogleGenAI } from '@google/genai';
 const AdminDashboard: React.FC = () => {
   const { currentUser, isAdmin } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'forms' | 'logs' | 'ai'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'forms' | 'messages' | 'logs' | 'ai'>('overview');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,6 +17,7 @@ const AdminDashboard: React.FC = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [forms, setForms] = useState<any[]>([]);
   const [logs, setLogs] = useState<any[]>([]);
+  const [messages, setMessages] = useState<any[]>([]);
   const [countryStats, setCountryStats] = useState<Record<string, number>>({});
   
   // AI State
@@ -52,10 +53,16 @@ const AdminDashboard: React.FC = () => {
           const logsQ = query(collection(db, 'activity_logs'), limit(100)); 
           const logsSnap = await getDocs(logsQ);
           let logsList = logsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          
           // Sort logs client-side (newest first)
           logsList.sort((a: any, b: any) => (b.submittedAt?.seconds || 0) - (a.submittedAt?.seconds || 0));
           setLogs(logsList);
+
+          // 4. Fetch Contact Messages
+          const msgsQ = query(collection(db, 'contact_messages'), limit(50));
+          const msgsSnap = await getDocs(msgsQ);
+          let msgsList = msgsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          msgsList.sort((a: any, b: any) => (b.submittedAt?.seconds || 0) - (a.submittedAt?.seconds || 0));
+          setMessages(msgsList);
 
           // Calculate Stats (Safely cast to numbers)
           const totalSubmissions = formsList.reduce((acc, f: any) => acc + Number(f.stats?.responses || 0), 0);
@@ -151,7 +158,7 @@ const AdminDashboard: React.FC = () => {
                 </div>
             </div>
 
-            <nav className="flex-1 px-4 flex flex-col gap-2">
+            <nav className="flex-1 px-4 flex flex-col gap-2 overflow-y-auto">
                 <button onClick={() => setActiveTab('overview')} className={`flex items-center gap-3 p-3 rounded-lg text-sm font-bold transition-all ${activeTab === 'overview' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-white/60 hover:bg-white/5 hover:text-white'}`}>
                     <span className="material-symbols-outlined">dashboard</span> Overview
                 </button>
@@ -160,6 +167,9 @@ const AdminDashboard: React.FC = () => {
                 </button>
                 <button onClick={() => setActiveTab('forms')} className={`flex items-center gap-3 p-3 rounded-lg text-sm font-bold transition-all ${activeTab === 'forms' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-white/60 hover:bg-white/5 hover:text-white'}`}>
                     <span className="material-symbols-outlined">description</span> Forms
+                </button>
+                 <button onClick={() => setActiveTab('messages')} className={`flex items-center gap-3 p-3 rounded-lg text-sm font-bold transition-all ${activeTab === 'messages' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-white/60 hover:bg-white/5 hover:text-white'}`}>
+                    <span className="material-symbols-outlined">mail</span> Messages
                 </button>
                 <button onClick={() => setActiveTab('logs')} className={`flex items-center gap-3 p-3 rounded-lg text-sm font-bold transition-all ${activeTab === 'logs' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-white/60 hover:bg-white/5 hover:text-white'}`}>
                     <span className="material-symbols-outlined">list_alt</span> Activity Logs
@@ -366,6 +376,41 @@ const AdminDashboard: React.FC = () => {
                             </tbody>
                         </table>
                     </div>
+                </div>
+            )}
+
+            {activeTab === 'messages' && (
+                <div className="flex flex-col gap-6 animate-fade-in">
+                     <div className="grid gap-4">
+                        {messages.map(msg => (
+                            <div key={msg.id} className="p-6 rounded-xl bg-white/5 border border-white/10 flex flex-col gap-3 hover:bg-white/10 transition-colors">
+                                <div className="flex justify-between items-start">
+                                    <div className="flex items-center gap-3">
+                                         <div className="size-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-lg">
+                                            {msg.name?.charAt(0).toUpperCase() || 'U'}
+                                         </div>
+                                         <div>
+                                             <h3 className="font-bold text-lg">{msg.name}</h3>
+                                             <p className="text-sm text-white/60">{msg.email}</p>
+                                         </div>
+                                    </div>
+                                    <span className="text-xs text-white/40 font-mono">
+                                        {msg.submittedAt?.seconds ? new Date(msg.submittedAt.seconds * 1000).toLocaleString() : 'Just now'}
+                                    </span>
+                                </div>
+                                <div className="p-4 rounded-lg bg-black/20 text-white/90 text-sm leading-relaxed">
+                                    {msg.message}
+                                </div>
+                                <div className="flex gap-2 justify-end">
+                                     <button className="px-3 py-1.5 rounded text-xs font-bold bg-white/10 hover:bg-white/20 transition-colors">Archive</button>
+                                     <a href={`mailto:${msg.email}`} className="px-3 py-1.5 rounded text-xs font-bold bg-primary text-white hover:bg-orange-600 transition-colors">Reply</a>
+                                </div>
+                            </div>
+                        ))}
+                        {messages.length === 0 && (
+                             <p className="text-white/40 italic text-center mt-10">No messages found.</p>
+                        )}
+                     </div>
                 </div>
             )}
 

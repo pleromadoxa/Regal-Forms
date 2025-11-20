@@ -1,5 +1,7 @@
-import React from 'react';
+
+import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { GoogleGenAI } from '@google/genai';
 
 // --- Blog Page ---
 export const BlogPage: React.FC = () => {
@@ -38,10 +40,143 @@ export const BlogPage: React.FC = () => {
   );
 };
 
+// --- Support Bot Component ---
+const SupportBot: React.FC = () => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [messages, setMessages] = useState<{role: 'user'|'model', text: string}[]>([
+        { role: 'model', text: "Hi there! I'm Regal AI. How can I help you with Regal Forms today?" }
+    ]);
+    const [input, setInput] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    useEffect(() => {
+        if (isOpen) scrollToBottom();
+    }, [messages, isOpen]);
+
+    const handleSend = async (e?: React.FormEvent) => {
+        e?.preventDefault();
+        if (!input.trim()) return;
+        
+        const userMsg = input.trim();
+        setInput('');
+        setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
+        setIsLoading(true);
+
+        try {
+            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+            const prompt = `
+                You are Regal AI, a helpful and friendly customer support bot for "Regal Forms", a SaaS form builder.
+                Regal Forms features include: Drag-and-drop builder, AI form generation, Analytics, Templates, Integrations (Google Sheets, Slack, Zapier), and User Management.
+                
+                Answer the user's question concisely and professionally. If you don't know the answer, suggest they contact human support at support@regalforms.xyz.
+                
+                User Question: ${userMsg}
+            `;
+
+            const response = await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: prompt
+            });
+
+            const reply = response.text || "I'm having trouble connecting right now. Please try again later.";
+            setMessages(prev => [...prev, { role: 'model', text: reply }]);
+
+        } catch (err) {
+            console.error(err);
+            setMessages(prev => [...prev, { role: 'model', text: "Sorry, I encountered an error. Please contact human support." }]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-4">
+            {isOpen && (
+                <div className="w-80 sm:w-96 h-[500px] bg-white dark:bg-[#1e1e1e] rounded-2xl shadow-2xl border border-black/10 dark:border-white/10 flex flex-col overflow-hidden animate-slide-up">
+                    {/* Header */}
+                    <div className="p-4 bg-primary text-white flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                            <span className="material-symbols-outlined">smart_toy</span>
+                            <span className="font-bold">Regal AI Support</span>
+                        </div>
+                        <button onClick={() => setIsOpen(false)} className="hover:opacity-70">
+                            <span className="material-symbols-outlined">close</span>
+                        </button>
+                    </div>
+
+                    {/* Chat Area */}
+                    <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 bg-background-light dark:bg-black/20">
+                        {messages.map((msg, i) => (
+                            <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                <div className={`max-w-[85%] p-3 rounded-xl text-sm ${msg.role === 'user' ? 'bg-primary text-white rounded-tr-none' : 'bg-white dark:bg-white/10 border border-black/5 dark:border-white/5 rounded-tl-none shadow-sm'}`}>
+                                    {msg.text}
+                                </div>
+                            </div>
+                        ))}
+                        {isLoading && (
+                            <div className="flex justify-start">
+                                <div className="bg-white dark:bg-white/10 p-3 rounded-xl rounded-tl-none flex gap-1 items-center">
+                                    <div className="size-2 bg-black/40 dark:bg-white/40 rounded-full animate-bounce"></div>
+                                    <div className="size-2 bg-black/40 dark:bg-white/40 rounded-full animate-bounce delay-100"></div>
+                                    <div className="size-2 bg-black/40 dark:bg-white/40 rounded-full animate-bounce delay-200"></div>
+                                </div>
+                            </div>
+                        )}
+                        <div ref={messagesEndRef} />
+                    </div>
+
+                    {/* Input */}
+                    <form onSubmit={handleSend} className="p-3 border-t border-black/10 dark:border-white/10 bg-white dark:bg-[#1e1e1e] flex gap-2">
+                        <input 
+                            type="text" 
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            placeholder="Type a message..."
+                            className="flex-1 bg-background-light dark:bg-black/20 rounded-full px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-primary"
+                        />
+                        <button 
+                            type="submit"
+                            disabled={isLoading || !input.trim()}
+                            className="size-9 rounded-full bg-primary text-white flex items-center justify-center hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <span className="material-symbols-outlined text-sm">send</span>
+                        </button>
+                    </form>
+                </div>
+            )}
+
+            <button 
+                onClick={() => setIsOpen(!isOpen)}
+                className="size-14 rounded-full bg-primary text-white shadow-xl flex items-center justify-center hover:scale-110 transition-transform"
+            >
+                {isOpen ? (
+                    <span className="material-symbols-outlined text-2xl">close</span>
+                ) : (
+                    <span className="material-symbols-outlined text-2xl">chat</span>
+                )}
+            </button>
+            <style>{`
+                @keyframes slideUp {
+                    from { opacity: 0; transform: translateY(20px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                .animate-slide-up {
+                    animation: slideUp 0.3s ease-out forwards;
+                }
+            `}</style>
+        </div>
+    );
+};
+
 // --- Help Center Page ---
 export const HelpCenterPage: React.FC = () => {
   return (
-    <div className="w-full max-w-4xl mx-auto px-4 py-12 md:py-20 flex flex-col gap-12">
+    <div className="w-full max-w-4xl mx-auto px-4 py-12 md:py-20 flex flex-col gap-12 relative">
       <div className="text-center bg-primary/10 rounded-2xl p-10">
         <h1 className="text-3xl font-bold mb-6">How can we help you?</h1>
         <div className="relative max-w-xl mx-auto">
@@ -77,6 +212,9 @@ export const HelpCenterPage: React.FC = () => {
             </div>
         ))}
       </div>
+      
+      {/* Floating Support Bot */}
+      <SupportBot />
     </div>
   );
 };

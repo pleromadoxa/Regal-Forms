@@ -30,7 +30,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             Regal Forms
           </Link>
         </div>
-        <nav className="hidden lg:flex flex-1 justify-center items-center gap-9">
+        <nav className="hidden lg:flex flex-1 justify-center items-center gap-6 xl:gap-9">
           {currentUser ? (
             <>
                {isAdmin && (
@@ -43,6 +43,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                <Link to="/submissions" className="text-black/80 dark:text-white/80 hover:text-primary dark:hover:text-primary text-sm font-medium leading-normal transition-colors">Submissions</Link>
                <Link to="/analytics" className="text-black/80 dark:text-white/80 hover:text-primary dark:hover:text-primary text-sm font-medium leading-normal transition-colors">Analytics</Link>
                <Link to="/templates" className="text-black/80 dark:text-white/80 hover:text-primary dark:hover:text-primary text-sm font-medium leading-normal transition-colors">Templates</Link>
+               <Link to="/integrations" className="text-black/80 dark:text-white/80 hover:text-primary dark:hover:text-primary text-sm font-medium leading-normal transition-colors">Integrations</Link>
             </>
           ) : (
             <>
@@ -116,6 +117,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             <ul className="mt-4 space-y-2 text-sm">
               <li><Link className="text-black/60 dark:text-white/60 hover:text-primary transition-colors" to="/careers">Careers</Link></li>
               <li><Link className="text-black/60 dark:text-white/60 hover:text-primary transition-colors" to="/contact">Contact</Link></li>
+              <li><Link className="text-black/60 dark:text-white/60 hover:text-primary transition-colors" to="/help">Support</Link></li>
             </ul>
           </div>
           <div>

@@ -1,7 +1,9 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { updateProfile, updatePassword, updateEmail } from 'firebase/auth';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '../services/firebase';
 
 const ProfileSettingsPage: React.FC = () => {
   const { currentUser } = useAuth();
@@ -12,6 +14,7 @@ const ProfileSettingsPage: React.FC = () => {
   const [photoURL, setPhotoURL] = useState('');
   const [isProfileSaving, setIsProfileSaving] = useState(false);
   const [profileMsg, setProfileMsg] = useState<{type: 'success'|'error', text: string} | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Security State
   const [currentPassword, setCurrentPassword] = useState('');
@@ -28,6 +31,35 @@ const ProfileSettingsPage: React.FC = () => {
       setPhotoURL(currentUser.photoURL || '');
     }
   }, [currentUser]);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files && e.target.files[0] && currentUser) {
+          const file = e.target.files[0];
+          
+          // Validation: check size (e.g., max 2MB) and type
+          if (file.size > 2 * 1024 * 1024) {
+              setProfileMsg({ type: 'error', text: 'Image must be smaller than 2MB.' });
+              return;
+          }
+
+          setIsProfileSaving(true);
+          try {
+              const storageRef = ref(storage, `profile_images/${currentUser.uid}/${Date.now()}_${file.name}`);
+              const snapshot = await uploadBytes(storageRef, file);
+              const downloadURL = await getDownloadURL(snapshot.ref);
+              
+              setPhotoURL(downloadURL);
+              // Auto-update profile with new image
+              await updateProfile(currentUser, { photoURL: downloadURL });
+              setProfileMsg({ type: 'success', text: 'Profile picture updated.' });
+          } catch (error: any) {
+              console.error("Upload failed", error);
+              setProfileMsg({ type: 'error', text: 'Failed to upload image. ' + error.message });
+          } finally {
+              setIsProfileSaving(false);
+          }
+      }
+  };
 
   const handleUpdateProfile = async () => {
     if (!currentUser) return;
@@ -90,9 +122,9 @@ const ProfileSettingsPage: React.FC = () => {
         <aside className="hidden lg:flex w-64 flex-col border-r border-black/10 dark:border-white/10 bg-white dark:bg-white/5 p-4 h-[calc(100vh-80px)] sticky top-[80px]">
           <div className="flex flex-col gap-4 flex-grow">
             <div className="flex items-center gap-3 p-2">
-              <div className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border border-black/10 dark:border-white/10 flex items-center justify-center bg-primary/10 text-primary font-bold">
-                  {currentUser?.photoURL ? (
-                      <img src={currentUser.photoURL} alt="Avatar" className="w-full h-full rounded-full object-cover" />
+              <div className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border border-black/10 dark:border-white/10 flex items-center justify-center bg-primary/10 text-primary font-bold overflow-hidden">
+                  {photoURL ? (
+                      <img src={photoURL} alt="Avatar" className="w-full h-full rounded-full object-cover" />
                   ) : (
                       (currentUser?.displayName || 'U').charAt(0).toUpperCase()
                   )}
@@ -138,31 +170,39 @@ const ProfileSettingsPage: React.FC = () => {
                 {/* Profile Header */}
                 <div className="flex flex-col gap-6 sm:flex-row sm:justify-between sm:items-center pb-6 border-b border-black/10 dark:border-white/10">
                   <div className="flex items-center gap-4">
-                    <div className="relative">
-                        <div className="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-24 w-24 border-2 border-white dark:border-white/10 shadow-sm flex items-center justify-center bg-primary/10 text-primary text-3xl font-black">
+                    <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                        <div className="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-24 w-24 border-2 border-white dark:border-white/10 shadow-sm flex items-center justify-center bg-primary/10 text-primary text-3xl font-black overflow-hidden">
                             {photoURL ? (
                                 <img src={photoURL} alt="Profile" className="w-full h-full rounded-full object-cover" />
                             ) : (
                                 (firstName || 'U').charAt(0).toUpperCase()
                             )}
                         </div>
-                        <button className="absolute bottom-0 right-0 flex items-center justify-center size-8 bg-white dark:bg-black rounded-full border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/10 shadow-sm text-black dark:text-white">
+                        <div className="absolute inset-0 bg-black/30 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                             <span className="material-symbols-outlined text-white">upload</span>
+                        </div>
+                        <button className="absolute bottom-0 right-0 flex items-center justify-center size-8 bg-white dark:bg-black rounded-full border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/10 shadow-sm text-black dark:text-white pointer-events-none">
                             <span className="material-symbols-outlined text-base">edit</span>
                         </button>
                     </div>
+                    <input 
+                        type="file" 
+                        ref={fileInputRef}
+                        className="hidden" 
+                        accept="image/*"
+                        onChange={handleFileChange}
+                    />
                     <div className="flex flex-col justify-center">
                       <p className="text-xl font-bold leading-tight">{currentUser?.displayName || 'User'}</p>
                       <p className="text-black/60 dark:text-white/60 text-sm font-normal leading-normal">{currentUser?.email}</p>
                     </div>
                   </div>
                   <button 
-                    onClick={() => {
-                        const url = prompt("Enter new profile picture URL:", photoURL);
-                        if(url !== null) setPhotoURL(url);
-                    }}
-                    className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-black/5 dark:bg-white/10 text-black dark:text-white text-sm font-semibold leading-normal w-full sm:w-auto hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isProfileSaving}
+                    className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-black/5 dark:bg-white/10 text-black dark:text-white text-sm font-semibold leading-normal w-full sm:w-auto hover:bg-black/10 dark:hover:bg-white/20 transition-colors disabled:opacity-50"
                   >
-                    <span className="truncate">Update Picture URL</span>
+                    <span className="truncate">{isProfileSaving ? 'Uploading...' : 'Upload New Picture'}</span>
                   </button>
                 </div>
 

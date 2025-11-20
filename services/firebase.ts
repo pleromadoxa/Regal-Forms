@@ -3,6 +3,7 @@ import { initializeApp } from "firebase/app";
 import { getAnalytics, isSupported } from "firebase/analytics";
 import { getAuth, GoogleAuthProvider, setPersistence, browserLocalPersistence } from "firebase/auth";
 import { getFirestore, initializeFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBiSJBegzB8cPTFzMX6eGC1rBqLSUhIoB8",
@@ -16,6 +17,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+const storage = getStorage(app);
 
 // Ensure session persistence
 setPersistence(auth, browserLocalPersistence)
@@ -37,4 +39,4 @@ isSupported().then((supported) => {
   }
 });
 
-export { app, auth, googleProvider, analytics, db };
+export { app, auth, googleProvider, analytics, db, storage };

@@ -251,7 +251,7 @@ const FormPreviewPage: React.FC = () => {
                 <>
                     <div className="flex flex-col gap-3 border-b-4 border-[#ff9a00] p-6 bg-[#ffffff] dark:bg-[#1a2f4a]">
                         <h1 className="font-display text-4xl font-black tracking-tight text-[#0d253f] dark:text-white">{form.title}</h1>
-                        <p className="font-display text-base font-normal leading-normal opacity-80">{form.description}</p>
+                        <p className="font-display text-base font-normal leading-normal opacity-80 whitespace-pre-wrap">{form.description}</p>
                         {form.collectEmails && (
                              <div className="mt-2 flex items-center gap-2 text-sm text-black/60 dark:text-white/60 bg-black/5 dark:bg-white/5 p-2 rounded w-fit">
                                 <span className="material-symbols-outlined text-base">info</span>
@@ -319,26 +319,38 @@ const FormPreviewPage: React.FC = () => {
 
                         // Product Field
                         if (field.type === 'product') {
-                            const isSelected = formValues[field.id] === 'selected';
-                            return (
-                                <div key={field.id} 
-                                     className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all cursor-pointer animate-fade-in ${isSelected ? 'border-[#ff9a00] bg-[#ff9a00]/10' : 'border-[#e5e7eb] dark:border-[#374151] hover:border-[#ff9a00]/50'}`}
-                                     onClick={() => handleInputChange(field.id, isSelected ? '' : 'selected')}
-                                >
-                                    <div className="flex items-center gap-4">
-                                        <div className={`size-6 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-[#ff9a00] bg-[#ff9a00]' : 'border-[#374151] dark:border-white/30'}`}>
-                                            {isSelected && <span className="material-symbols-outlined text-white text-sm">check</span>}
-                                        </div>
-                                        <div>
-                                            <h3 className="font-bold text-lg">{field.label}</h3>
-                                            <p className="text-sm text-black/60 dark:text-white/60">Click to select this item</p>
-                                        </div>
-                                    </div>
-                                    <div className="text-xl font-black text-[#0d253f] dark:text-white">
-                                        {field.price} <span className="text-sm font-medium text-black/50 dark:text-white/50">{field.currency || 'USD'}</span>
-                                    </div>
-                                </div>
-                            )
+                             const isSelected = formValues[field.id] === 'selected';
+                             return (
+                                 <div key={field.id} 
+                                      className={`flex flex-col sm:flex-row gap-4 p-4 rounded-xl border-2 transition-all cursor-pointer animate-fade-in group relative overflow-hidden ${isSelected ? 'border-[#ff9a00] bg-[#ff9a00]/5' : 'border-[#e5e7eb] dark:border-[#374151] hover:border-[#ff9a00]/50'}`}
+                                      onClick={() => handleInputChange(field.id, isSelected ? '' : 'selected')}
+                                 >
+                                     {isSelected && (
+                                         <div className="absolute top-0 right-0 bg-[#ff9a00] text-white px-3 py-1 rounded-bl-lg font-bold text-xs flex items-center gap-1 z-10">
+                                             <span className="material-symbols-outlined text-sm">check</span> Selected
+                                         </div>
+                                     )}
+                                     {field.productImage && (
+                                         <div className="sm:w-32 h-32 shrink-0 rounded-lg overflow-hidden bg-black/5 dark:bg-white/5">
+                                             <img src={field.productImage} alt={field.label} className="w-full h-full object-cover" />
+                                         </div>
+                                     )}
+                                     <div className="flex flex-col justify-between flex-1 py-1">
+                                         <div>
+                                             <h3 className="font-bold text-lg">{field.label}</h3>
+                                             <p className="text-sm text-black/60 dark:text-white/60 mt-1 leading-relaxed">{field.productDescription}</p>
+                                         </div>
+                                         <div className="mt-4 flex items-center justify-between">
+                                             <div className="text-xl font-black text-[#0d253f] dark:text-white">
+                                                {field.price} <span className="text-sm font-medium text-black/50 dark:text-white/50">{field.currency || 'USD'}</span>
+                                             </div>
+                                             <button type="button" className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${isSelected ? 'bg-[#ff9a00]/20 text-[#ff9a00]' : 'bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20'}`}>
+                                                 {isSelected ? 'Remove' : 'Select'}
+                                             </button>
+                                         </div>
+                                     </div>
+                                 </div>
+                             )
                         }
 
                         // Payment Fields (Mock)

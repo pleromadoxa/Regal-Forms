@@ -1,6 +1,8 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '../services/firebase';
 
 // --- Careers Page ---
 export const CareersPage: React.FC = () => {
@@ -43,6 +45,34 @@ export const CareersPage: React.FC = () => {
 
 // --- Contact Page ---
 export const ContactPage: React.FC = () => {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [message, setMessage] = useState('');
+  const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!name || !email || !message) return;
+      
+      setStatus('submitting');
+      try {
+          await addDoc(collection(db, 'contact_messages'), {
+              name,
+              email,
+              message,
+              submittedAt: serverTimestamp(),
+              status: 'new'
+          });
+          setStatus('success');
+          setName('');
+          setEmail('');
+          setMessage('');
+      } catch (error) {
+          console.error("Error submitting contact form", error);
+          setStatus('error');
+      }
+  };
+
   return (
     <div className="w-full max-w-6xl mx-auto px-4 py-12 md:py-20 grid md:grid-cols-2 gap-12">
        <div className="flex flex-col gap-8">
@@ -77,23 +107,63 @@ export const ContactPage: React.FC = () => {
        </div>
 
        <div className="bg-white dark:bg-white/5 p-8 rounded-2xl border border-black/10 dark:border-white/10 shadow-lg">
-          <form className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-                <label className="font-bold text-sm">Name</label>
-                <input type="text" className="p-3 rounded-lg bg-background-light dark:bg-black/20 border border-black/10 dark:border-white/10 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Your name" />
-            </div>
-            <div className="flex flex-col gap-2">
-                <label className="font-bold text-sm">Email</label>
-                <input type="email" className="p-3 rounded-lg bg-background-light dark:bg-black/20 border border-black/10 dark:border-white/10 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="you@company.com" />
-            </div>
-            <div className="flex flex-col gap-2">
-                <label className="font-bold text-sm">Message</label>
-                <textarea rows={4} className="p-3 rounded-lg bg-background-light dark:bg-black/20 border border-black/10 dark:border-white/10 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="How can we help?" />
-            </div>
-            <button className="mt-2 py-3 bg-primary hover:bg-orange-600 text-white dark:text-black font-bold rounded-lg transition-colors">
-                Send Message
-            </button>
-          </form>
+          {status === 'success' ? (
+             <div className="h-full flex flex-col items-center justify-center text-center min-h-[300px]">
+                 <div className="size-16 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 flex items-center justify-center mb-4">
+                     <span className="material-symbols-outlined text-3xl">check</span>
+                 </div>
+                 <h3 className="text-2xl font-bold mb-2">Message Sent!</h3>
+                 <p className="text-black/60 dark:text-white/60 mb-6">Thank you for reaching out. We'll get back to you shortly.</p>
+                 <button onClick={() => setStatus('idle')} className="text-primary font-bold hover:underline">Send another message</button>
+             </div>
+          ) : (
+              <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                <div className="flex flex-col gap-2">
+                    <label className="font-bold text-sm">Name</label>
+                    <input 
+                        type="text" 
+                        required
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="p-3 rounded-lg bg-background-light dark:bg-black/20 border border-black/10 dark:border-white/10 focus:border-primary focus:ring-1 focus:ring-primary outline-none" 
+                        placeholder="Your name" 
+                    />
+                </div>
+                <div className="flex flex-col gap-2">
+                    <label className="font-bold text-sm">Email</label>
+                    <input 
+                        type="email" 
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="p-3 rounded-lg bg-background-light dark:bg-black/20 border border-black/10 dark:border-white/10 focus:border-primary focus:ring-1 focus:ring-primary outline-none" 
+                        placeholder="you@company.com" 
+                    />
+                </div>
+                <div className="flex flex-col gap-2">
+                    <label className="font-bold text-sm">Message</label>
+                    <textarea 
+                        required
+                        rows={4} 
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                        className="p-3 rounded-lg bg-background-light dark:bg-black/20 border border-black/10 dark:border-white/10 focus:border-primary focus:ring-1 focus:ring-primary outline-none" 
+                        placeholder="How can we help?" 
+                    />
+                </div>
+                
+                {status === 'error' && <p className="text-red-500 text-sm">Failed to send message. Please try again.</p>}
+
+                <button 
+                    type="submit" 
+                    disabled={status === 'submitting'}
+                    className="mt-2 py-3 bg-primary hover:bg-orange-600 text-white dark:text-black font-bold rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-70"
+                >
+                    {status === 'submitting' && <span className="material-symbols-outlined animate-spin text-sm">refresh</span>}
+                    Send Message
+                </button>
+              </form>
+          )}
        </div>
     </div>
   );
