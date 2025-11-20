@@ -7,7 +7,6 @@ const FormSettingsPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Initialize state from location state (passed from Builder)
   const [form, setForm] = useState<GeneratedForm | null>(null);
   const [formId, setFormId] = useState<string | null>(null);
   const [newCollaborator, setNewCollaborator] = useState('');
@@ -17,13 +16,11 @@ const FormSettingsPage: React.FC = () => {
           setForm(location.state.formData);
           setFormId(location.state.formId || null);
       } else {
-          // Redirect back if accessed directly without data
           navigate('/create');
       }
   }, [location.state, navigate]);
 
   const handleSave = () => {
-      // Navigate back to builder with updated form data
       navigate('/create', { 
           state: { 
               formData: form,
@@ -57,6 +54,13 @@ const FormSettingsPage: React.FC = () => {
       });
   };
 
+  const scrollToSection = (id: string) => {
+      const element = document.getElementById(id);
+      if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+  };
+
   if (!form) return null;
 
   return (
@@ -84,46 +88,43 @@ const FormSettingsPage: React.FC = () => {
         </div>
       </header>
 
-      <div className="flex flex-1">
-        {/* Side Navigation Bar (Desktop) */}
-        <aside className="sticky top-[61px] hidden h-[calc(100vh-61px)] w-64 flex-col border-r border-black/10 bg-background-light p-4 dark:border-white/10 dark:bg-background-dark lg:flex">
+      <div className="flex flex-1 overflow-hidden">
+        <aside className="sticky top-0 hidden h-full w-64 flex-col border-r border-black/10 bg-background-light p-4 dark:border-white/10 dark:bg-background-dark lg:flex overflow-y-auto">
             <div className="flex flex-col gap-4">
                 <div className="flex flex-col px-3 pt-2">
                     <h1 className="text-base font-medium">Settings Menu</h1>
                     <p className="text-sm font-normal text-zinc-500 dark:text-zinc-400">Navigate to a category</p>
                 </div>
                 <div className="flex flex-col gap-1">
-                    <a href="#general" className="flex items-center gap-3 rounded-lg bg-primary/10 px-3 py-2 text-primary dark:bg-primary/20">
+                    <button onClick={() => scrollToSection('general')} className="flex items-center gap-3 rounded-lg px-3 py-2 text-left text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-white/5 focus:bg-primary/10 focus:text-primary dark:focus:bg-primary/20">
                         <span className="material-symbols-outlined text-xl">settings</span>
                         <p className="text-sm font-medium leading-normal">General</p>
-                    </a>
-                    <a href="#responses" className="flex items-center gap-3 rounded-lg px-3 py-2 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-white/5">
+                    </button>
+                    <button onClick={() => scrollToSection('responses')} className="flex items-center gap-3 rounded-lg px-3 py-2 text-left text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-white/5 focus:bg-primary/10 focus:text-primary dark:focus:bg-primary/20">
                         <span className="material-symbols-outlined text-xl">forum</span>
                         <p className="text-sm font-medium leading-normal">Responses</p>
-                    </a>
-                    <a href="#presentation" className="flex items-center gap-3 rounded-lg px-3 py-2 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-white/5">
+                    </button>
+                    <button onClick={() => scrollToSection('presentation')} className="flex items-center gap-3 rounded-lg px-3 py-2 text-left text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-white/5 focus:bg-primary/10 focus:text-primary dark:focus:bg-primary/20">
                         <span className="material-symbols-outlined text-xl">slideshow</span>
                         <p className="text-sm font-medium leading-normal">Presentation</p>
-                    </a>
-                    <a href="#collaboration" className="flex items-center gap-3 rounded-lg px-3 py-2 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-white/5">
+                    </button>
+                    <button onClick={() => scrollToSection('collaboration')} className="flex items-center gap-3 rounded-lg px-3 py-2 text-left text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-white/5 focus:bg-primary/10 focus:text-primary dark:focus:bg-primary/20">
                         <span className="material-symbols-outlined text-xl">group</span>
                         <p className="text-sm font-medium leading-normal">Collaboration</p>
-                    </a>
+                    </button>
                 </div>
             </div>
         </aside>
 
-        {/* Main Content */}
-        <main className="w-full flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto">
+        <main className="w-full flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto scroll-smooth">
             <div className="mx-auto max-w-4xl flex flex-col gap-8 pb-20">
                 
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                     <p className="text-4xl font-black leading-tight tracking-[-0.033em]">Form Settings</p>
                 </div>
 
-                {/* Mobile Accordions (Visible on LG and below) */}
+                {/* Mobile Accordions */}
                 <div className="flex flex-col gap-3 lg:hidden">
-                    {/* General Accordion */}
                     <details className="flex flex-col rounded-lg border border-black/10 bg-white dark:border-white/10 dark:bg-white/5 group">
                         <summary className="flex cursor-pointer list-none items-center justify-between gap-6 p-4">
                             <p className="text-base font-bold">General</p>
@@ -143,27 +144,15 @@ const FormSettingsPage: React.FC = () => {
                             <div className="flex items-center justify-between gap-4">
                                 <div className="flex flex-col gap-1">
                                     <p className="text-sm font-medium">Limit to 1 response</p>
-                                    <p className="text-sm text-zinc-500 dark:text-zinc-400">Require sign in.</p>
                                 </div>
                                 <label className="relative flex h-7 w-12 cursor-pointer items-center rounded-full bg-zinc-200 p-1 transition-colors has-[:checked]:bg-primary dark:bg-zinc-700">
                                     <input type="checkbox" className="sr-only peer" checked={!!form.limitOneResponse} onChange={(e) => updateSetting('limitOneResponse', e.target.checked)} />
                                     <span className="h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-5"></span>
                                 </label>
                             </div>
-                             <div className="flex items-center justify-between gap-4">
-                                <div className="flex flex-col gap-1">
-                                    <p className="text-sm font-medium">Restrict to my organization</p>
-                                    <p className="text-sm text-zinc-500 dark:text-zinc-400">Internal only.</p>
-                                </div>
-                                <label className="relative flex h-7 w-12 cursor-pointer items-center rounded-full bg-zinc-200 p-1 transition-colors has-[:checked]:bg-primary dark:bg-zinc-700">
-                                    <input type="checkbox" className="sr-only peer" checked={!!form.restrictToOrg} onChange={(e) => updateSetting('restrictToOrg', e.target.checked)} />
-                                    <span className="h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-5"></span>
-                                </label>
-                            </div>
                         </div>
                     </details>
 
-                    {/* Responses Accordion */}
                     <details className="flex flex-col rounded-lg border border-black/10 bg-white dark:border-white/10 dark:bg-white/5 group">
                         <summary className="flex cursor-pointer list-none items-center justify-between gap-6 p-4">
                             <p className="text-base font-bold">Responses</p>
@@ -187,7 +176,6 @@ const FormSettingsPage: React.FC = () => {
                         </div>
                     </details>
 
-                    {/* Presentation Accordion */}
                     <details className="flex flex-col rounded-lg border border-black/10 bg-white dark:border-white/10 dark:bg-white/5 group">
                         <summary className="flex cursor-pointer list-none items-center justify-between gap-6 p-4">
                             <p className="text-base font-bold">Presentation</p>
@@ -215,7 +203,6 @@ const FormSettingsPage: React.FC = () => {
                         </div>
                     </details>
 
-                    {/* Collaboration Accordion */}
                     <details className="flex flex-col rounded-lg border border-black/10 bg-white dark:border-white/10 dark:bg-white/5 group">
                         <summary className="flex cursor-pointer list-none items-center justify-between gap-6 p-4">
                             <p className="text-base font-bold">Collaboration</p>
@@ -245,9 +232,8 @@ const FormSettingsPage: React.FC = () => {
                     </details>
                 </div>
 
-                {/* Full Desktop Sections (Hidden LG Flex) */}
+                {/* Desktop Sections */}
                 <div className="hidden flex-col gap-10 lg:flex">
-                    {/* General Settings Section */}
                     <section id="general" className="scroll-mt-24">
                         <div className="mb-4">
                             <h3 className="text-xl font-bold">General</h3>
@@ -260,12 +246,7 @@ const FormSettingsPage: React.FC = () => {
                                     <p className="text-sm text-zinc-500 dark:text-zinc-400">Respondent's email will be collected automatically.</p>
                                 </div>
                                 <label className="relative flex h-7 w-12 cursor-pointer items-center rounded-full bg-zinc-200 p-1 transition-colors has-[:checked]:bg-primary dark:bg-zinc-700">
-                                    <input 
-                                        type="checkbox" 
-                                        className="sr-only peer" 
-                                        checked={!!form.collectEmails}
-                                        onChange={(e) => updateSetting('collectEmails', e.target.checked)}
-                                    />
+                                    <input type="checkbox" className="sr-only peer" checked={!!form.collectEmails} onChange={(e) => updateSetting('collectEmails', e.target.checked)} />
                                     <span className="h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-5"></span>
                                 </label>
                             </div>
@@ -276,12 +257,7 @@ const FormSettingsPage: React.FC = () => {
                                     <p className="text-sm text-zinc-500 dark:text-zinc-400">Respondents will be required to sign in.</p>
                                 </div>
                                 <label className="relative flex h-7 w-12 cursor-pointer items-center rounded-full bg-zinc-200 p-1 transition-colors has-[:checked]:bg-primary dark:bg-zinc-700">
-                                    <input 
-                                        type="checkbox" 
-                                        className="sr-only peer"
-                                        checked={!!form.limitOneResponse}
-                                        onChange={(e) => updateSetting('limitOneResponse', e.target.checked)}
-                                    />
+                                    <input type="checkbox" className="sr-only peer" checked={!!form.limitOneResponse} onChange={(e) => updateSetting('limitOneResponse', e.target.checked)} />
                                     <span className="h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-5"></span>
                                 </label>
                             </div>
@@ -292,19 +268,13 @@ const FormSettingsPage: React.FC = () => {
                                     <p className="text-sm text-zinc-500 dark:text-zinc-400">Only users within your organization can respond.</p>
                                 </div>
                                 <label className="relative flex h-7 w-12 cursor-pointer items-center rounded-full bg-zinc-200 p-1 transition-colors has-[:checked]:bg-primary dark:bg-zinc-700">
-                                    <input 
-                                        type="checkbox" 
-                                        className="sr-only peer"
-                                        checked={!!form.restrictToOrg}
-                                        onChange={(e) => updateSetting('restrictToOrg', e.target.checked)}
-                                    />
+                                    <input type="checkbox" className="sr-only peer" checked={!!form.restrictToOrg} onChange={(e) => updateSetting('restrictToOrg', e.target.checked)} />
                                     <span className="h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-5"></span>
                                 </label>
                             </div>
                         </div>
                     </section>
 
-                    {/* Responses Section */}
                     <section id="responses" className="scroll-mt-24">
                         <div className="mb-4">
                             <h3 className="text-xl font-bold">Responses</h3>
@@ -317,12 +287,7 @@ const FormSettingsPage: React.FC = () => {
                                     <p className="text-sm text-zinc-500 dark:text-zinc-400">Respondents can change their answers after submitting.</p>
                                 </div>
                                 <label className="relative flex h-7 w-12 cursor-pointer items-center rounded-full bg-zinc-200 p-1 transition-colors has-[:checked]:bg-primary dark:bg-zinc-700">
-                                    <input 
-                                        type="checkbox" 
-                                        className="sr-only peer"
-                                        checked={!!form.allowResponseEditing}
-                                        onChange={(e) => updateSetting('allowResponseEditing', e.target.checked)}
-                                    />
+                                    <input type="checkbox" className="sr-only peer" checked={!!form.allowResponseEditing} onChange={(e) => updateSetting('allowResponseEditing', e.target.checked)} />
                                     <span className="h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-5"></span>
                                 </label>
                             </div>
@@ -330,17 +295,11 @@ const FormSettingsPage: React.FC = () => {
                             <div className="flex flex-col gap-2">
                                 <p className="text-base font-medium">Confirmation message</p>
                                 <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-2">Message shown to respondents after submission.</p>
-                                <textarea 
-                                    className="w-full rounded-md border-black/10 bg-background-light text-black shadow-sm focus:border-primary focus:ring-primary dark:border-white/10 dark:bg-black/20 dark:text-white p-3 outline-none" 
-                                    rows={3}
-                                    value={form.successMessage || ''}
-                                    onChange={(e) => updateSetting('successMessage', e.target.value)}
-                                ></textarea>
+                                <textarea className="w-full rounded-md border-black/10 bg-background-light text-black shadow-sm focus:border-primary focus:ring-primary dark:border-white/10 dark:bg-black/20 dark:text-white p-3 outline-none" rows={3} value={form.successMessage || ''} onChange={(e) => updateSetting('successMessage', e.target.value)}></textarea>
                             </div>
                         </div>
                     </section>
 
-                    {/* Presentation Section */}
                     <section id="presentation" className="scroll-mt-24">
                         <div className="mb-4">
                             <h3 className="text-xl font-bold">Presentation</h3>
@@ -353,12 +312,7 @@ const FormSettingsPage: React.FC = () => {
                                     <p className="text-sm text-zinc-500 dark:text-zinc-400">Display progress based on form completion.</p>
                                 </div>
                                 <label className="relative flex h-7 w-12 cursor-pointer items-center rounded-full bg-zinc-200 p-1 transition-colors has-[:checked]:bg-primary dark:bg-zinc-700">
-                                    <input 
-                                        type="checkbox" 
-                                        className="sr-only peer"
-                                        checked={!!form.showProgressBar}
-                                        onChange={(e) => updateSetting('showProgressBar', e.target.checked)}
-                                    />
+                                    <input type="checkbox" className="sr-only peer" checked={!!form.showProgressBar} onChange={(e) => updateSetting('showProgressBar', e.target.checked)} />
                                     <span className="h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-5"></span>
                                 </label>
                             </div>
@@ -369,19 +323,13 @@ const FormSettingsPage: React.FC = () => {
                                     <p className="text-sm text-zinc-500 dark:text-zinc-400">Randomize the order of questions for each respondent.</p>
                                 </div>
                                 <label className="relative flex h-7 w-12 cursor-pointer items-center rounded-full bg-zinc-200 p-1 transition-colors has-[:checked]:bg-primary dark:bg-zinc-700">
-                                    <input 
-                                        type="checkbox" 
-                                        className="sr-only peer"
-                                        checked={!!form.shuffleQuestions}
-                                        onChange={(e) => updateSetting('shuffleQuestions', e.target.checked)}
-                                    />
+                                    <input type="checkbox" className="sr-only peer" checked={!!form.shuffleQuestions} onChange={(e) => updateSetting('shuffleQuestions', e.target.checked)} />
                                     <span className="h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-5"></span>
                                 </label>
                             </div>
                         </div>
                     </section>
 
-                    {/* Collaboration Section */}
                     <section id="collaboration" className="scroll-mt-24">
                         <div className="mb-4">
                             <h3 className="text-xl font-bold">Collaboration</h3>
@@ -391,18 +339,9 @@ const FormSettingsPage: React.FC = () => {
                             <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
                                 <div className="flex-grow">
                                     <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Add collaborators</label>
-                                    <input 
-                                        type="email" 
-                                        value={newCollaborator}
-                                        onChange={(e) => setNewCollaborator(e.target.value)}
-                                        placeholder="Enter email address" 
-                                        className="block w-full rounded-md border-black/10 bg-background-light text-black shadow-sm focus:border-primary focus:ring-primary dark:border-white/10 dark:bg-black/20 dark:text-white p-3 outline-none"
-                                    />
+                                    <input type="email" value={newCollaborator} onChange={(e) => setNewCollaborator(e.target.value)} placeholder="Enter email address" className="block w-full rounded-md border-black/10 bg-background-light text-black shadow-sm focus:border-primary focus:ring-primary dark:border-white/10 dark:bg-black/20 dark:text-white p-3 outline-none" />
                                 </div>
-                                <button 
-                                    onClick={addCollaborator}
-                                    className="flex h-[46px] items-center justify-center rounded-lg bg-zinc-200 px-4 text-sm font-bold text-zinc-800 hover:bg-zinc-300 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
-                                >
+                                <button onClick={addCollaborator} className="flex h-[46px] items-center justify-center rounded-lg bg-zinc-200 px-4 text-sm font-bold text-zinc-800 hover:bg-zinc-300 dark:bg-white/10 dark:text-white dark:hover:bg-white/20">
                                     Add
                                 </button>
                             </div>
@@ -423,10 +362,7 @@ const FormSettingsPage: React.FC = () => {
                                                         <p className="text-sm text-zinc-500 dark:text-zinc-400">Editor</p>
                                                     </div>
                                                 </div>
-                                                <button 
-                                                    onClick={() => removeCollaborator(email)}
-                                                    className="text-zinc-500 hover:text-red-500 dark:text-zinc-400 dark:hover:text-red-500 p-2"
-                                                >
+                                                <button onClick={() => removeCollaborator(email)} className="text-zinc-500 hover:text-red-500 dark:text-zinc-400 dark:hover:text-red-500 p-2">
                                                     <span className="material-symbols-outlined text-xl">delete</span>
                                                 </button>
                                             </li>

@@ -7,7 +7,8 @@ import {
   signInWithPopup, 
   updateProfile 
 } from 'firebase/auth';
-import { auth, googleProvider } from '../services/firebase';
+import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
+import { auth, googleProvider, db } from '../services/firebase';
 
 interface SignUpPageProps {
   isLogin?: boolean;
@@ -22,6 +23,51 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ isLogin = false }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  const saveUserToFirestore = async (user: any, name?: string) => {
+      if (!user) return;
+      try {
+          const userRef = doc(db, 'users', user.uid);
+          
+          // Attempt to check if user exists
+          let userExists = false;
+          try {
+              const userSnap = await getDoc(userRef);
+              userExists = userSnap.exists();
+          } catch (readError) {
+              console.warn("Could not read user doc, assuming create/overwrite flow", readError);
+          }
+          
+          const userData: any = {
+              uid: user.uid,
+              email: user.email || '',
+              displayName: name || user.displayName || '',
+              photoURL: user.photoURL || '',
+              lastLogin: serverTimestamp(),
+          };
+
+          // Enforce Admin Role for specific email
+          if (user.email === 'pleromadoxa@gmail.com') {
+              userData.role = 'admin';
+          }
+
+          if (userExists) {
+              // UPDATE: Merge data. If it's the admin, we force role='admin' update.
+              // For other users, we just update login time/profile info, avoiding restricted fields if any rules exist.
+              await setDoc(userRef, userData, { merge: true });
+          } else {
+              // CREATE: Set initial timestamp and default role if not admin
+              if (!userData.role) {
+                  userData.role = 'user';
+              }
+              userData.createdAt = serverTimestamp();
+
+              await setDoc(userRef, userData);
+          }
+      } catch (e: any) {
+          console.error("Error saving user to DB:", e);
+      }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -29,13 +75,15 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ isLogin = false }) => {
 
     try {
       if (isLogin) {
-        await signInWithEmailAndPassword(auth, email, password);
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        await saveUserToFirestore(userCredential.user);
       } else {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         if (fullName) {
           // Update profile with full name
           await updateProfile(userCredential.user, { displayName: fullName });
         }
+        await saveUserToFirestore(userCredential.user, fullName);
       }
       // Redirect to the builder page after successful auth
       navigate('/create');
@@ -61,7 +109,8 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ isLogin = false }) => {
   const handleGoogleSignIn = async () => {
     setError('');
     try {
-      await signInWithPopup(auth, googleProvider);
+      const result = await signInWithPopup(auth, googleProvider);
+      await saveUserToFirestore(result.user);
       navigate('/create');
     } catch (err: any) {
       console.error("Google Auth error:", err);

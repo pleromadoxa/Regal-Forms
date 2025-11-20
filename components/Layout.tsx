@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { currentUser, logout } = useAuth();
+  const { currentUser, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -19,7 +19,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <div className="relative flex min-h-screen w-full flex-col group/design-root overflow-x-hidden bg-background-light dark:bg-background-dark text-black dark:text-white">
       {/* Header */}
-      <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-black/10 dark:border-white/10 px-4 sm:px-10 py-3 z-50 relative bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md">
+      <header className="flex items-center justify-between whitespace-nowrap border-b border-white/20 dark:border-white/10 px-4 sm:px-10 py-3 z-50 relative bg-white/70 dark:bg-black/60 backdrop-blur-xl shadow-sm">
         <div className="flex items-center gap-4">
           <Link to="/" className="size-8 text-primary hover:opacity-80 transition-opacity">
             <svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
@@ -33,6 +33,12 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         <nav className="hidden lg:flex flex-1 justify-center items-center gap-9">
           {currentUser ? (
             <>
+               {isAdmin && (
+                   <Link to="/admin" className="text-primary font-bold hover:text-orange-600 text-sm leading-normal transition-colors flex items-center gap-1 bg-primary/10 px-3 py-1.5 rounded-lg">
+                       <span className="material-symbols-outlined text-lg">admin_panel_settings</span>
+                       Admin
+                   </Link>
+               )}
                <Link to="/create" className="text-black/80 dark:text-white/80 hover:text-primary dark:hover:text-primary text-sm font-medium leading-normal transition-colors">Builder</Link>
                <Link to="/submissions" className="text-black/80 dark:text-white/80 hover:text-primary dark:hover:text-primary text-sm font-medium leading-normal transition-colors">Submissions</Link>
                <Link to="/analytics" className="text-black/80 dark:text-white/80 hover:text-primary dark:hover:text-primary text-sm font-medium leading-normal transition-colors">Analytics</Link>
@@ -52,13 +58,13 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     <span className="text-sm font-bold leading-none">{currentUser.displayName || 'User'}</span>
                     <span className="text-xs text-black/50 dark:text-white/50 leading-none mt-1">{currentUser.email}</span>
                 </div>
-                <div className="h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-sm">
+                <Link to="/profile" className="h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-sm hover:ring-2 hover:ring-primary/50 transition-all">
                     {currentUser.photoURL ? (
                         <img src={currentUser.photoURL} alt="Avatar" className="h-full w-full rounded-full object-cover" />
                     ) : (
                         (currentUser.displayName || currentUser.email || 'U').charAt(0).toUpperCase()
                     )}
-                </div>
+                </Link>
                 <button 
                     onClick={handleLogout}
                     className="text-sm font-medium text-red-500 hover:text-red-600 transition-colors"

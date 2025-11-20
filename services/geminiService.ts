@@ -12,7 +12,9 @@ export const generateFormSchema = async (topic: string): Promise<GeneratedForm> 
   const ai = new GoogleGenAI({ apiKey });
 
   const prompt = `Generate a structured form schema for a form about: "${topic}".
-  The form should be professional and include diverse field types where appropriate (text, email, phone, file, select, checkbox, etc).
+  The form should be professional. 
+  You can use standard fields (text, email, select, url) and rich fields like 'date', 'quote', 'countdown' (for events), 'product' (for sales), 'rating', 'slider', 'signature', or 'youtube' if relevant to the topic.
+  If the topic involves selling items, use the 'product' field type with a price.
   Keep the number of fields between 5 and 10.
   Include helpful helper text for complex fields.`;
 
@@ -29,6 +31,7 @@ export const generateFormSchema = async (topic: string): Promise<GeneratedForm> 
             description: { type: Type.STRING, description: "A short description of the form's purpose" },
             submitButtonText: { type: Type.STRING, description: "Text for the submit button, e.g., 'Send Request'" },
             successMessage: { type: Type.STRING, description: "Message to show after submission" },
+            slug: { type: Type.STRING, description: "A URL-friendly slug for the form (e.g. customer-feedback-2025)" },
             
             // Settings
             collectEmails: { type: Type.BOOLEAN },
@@ -44,7 +47,7 @@ export const generateFormSchema = async (topic: string): Promise<GeneratedForm> 
                   label: { type: Type.STRING },
                   type: {
                     type: Type.STRING,
-                    enum: ['text', 'email', 'number', 'textarea', 'select', 'checkbox', 'radio', 'phone', 'file', 'image']
+                    enum: ['text', 'email', 'number', 'textarea', 'select', 'checkbox', 'radio', 'phone', 'file', 'image', 'date', 'time', 'html', 'quote', 'youtube', 'countdown', 'url', 'stripe', 'paypal', 'product', 'rating', 'slider', 'signature']
                   },
                   placeholder: { type: Type.STRING },
                   helperText: { type: Type.STRING, description: "Small hint text displayed below the input" },
@@ -53,7 +56,14 @@ export const generateFormSchema = async (topic: string): Promise<GeneratedForm> 
                     type: Type.ARRAY,
                     items: { type: Type.STRING },
                     description: "Options for select, checkbox, or radio types"
-                  }
+                  },
+                  content: { type: Type.STRING, description: "Content for HTML or Quote fields" },
+                  videoUrl: { type: Type.STRING, description: "URL for Youtube video if applicable" },
+                  targetDate: { type: Type.STRING, description: "ISO Date string for countdown target" },
+                  price: { type: Type.NUMBER, description: "Price for product fields" },
+                  currency: { type: Type.STRING, description: "Currency code e.g. USD" },
+                  min: { type: Type.NUMBER, description: "Min value for slider/rating" },
+                  max: { type: Type.NUMBER, description: "Max value for slider/rating" }
                 },
                 required: ["id", "label", "type", "required"]
               }

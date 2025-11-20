@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -13,6 +13,7 @@ interface FormStats {
 interface FormData {
     id: string;
     title: string;
+    createdAt: any;
     stats?: FormStats;
 }
 
@@ -27,12 +28,21 @@ const AnalyticsPage: React.FC = () => {
         if (!currentUser) return;
         setIsLoading(true);
         try {
-            const q = query(collection(db, 'forms'), where('userId', '==', currentUser.uid), orderBy('createdAt', 'desc'));
+            // Removed orderBy to avoid "Missing or insufficient permissions" errors due to missing composite indexes
+            const q = query(collection(db, 'forms'), where('userId', '==', currentUser.uid));
             const snapshot = await getDocs(q);
             const formList = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             } as FormData));
+            
+            // Sort client-side by createdAt descending
+            formList.sort((a, b) => {
+                const dateA = a.createdAt?.seconds || 0;
+                const dateB = b.createdAt?.seconds || 0;
+                return dateB - dateA;
+            });
+
             setForms(formList);
             if (formList.length > 0) {
                 setSelectedFormId(formList[0].id);

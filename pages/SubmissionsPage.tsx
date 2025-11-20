@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -22,11 +22,24 @@ interface FormOverview {
   // Store other form data for drafts to pass to builder
   description?: string;
   fields?: any[];
+  
+  // Settings & Config
+  collectEmails?: boolean;
+  limitOneResponse?: boolean;
+  restrictToOrg?: boolean;
+  allowResponseEditing?: boolean;
+  showProgressBar?: boolean;
+  shuffleQuestions?: boolean;
+  collaborators?: string[];
+  slug?: string;
+  submitButtonText?: string;
+  successMessage?: string;
 }
 
 interface Submission {
   id: string;
   date: string;
+  timestamp: number; // Added for sorting
   data: Record<string, any>;
 }
 
@@ -47,7 +60,8 @@ const SubmissionsPage: React.FC = () => {
       if (!currentUser) return;
       setIsLoading(true);
       try {
-        const q = query(collection(db, 'forms'), where('userId', '==', currentUser.uid), orderBy('updatedAt', 'desc'));
+        // Removed orderBy to prevent index/permission errors
+        const q = query(collection(db, 'forms'), where('userId', '==', currentUser.uid));
         const querySnapshot = await getDocs(q);
         const formsList = querySnapshot.docs.map(doc => ({
           id: doc.id,
@@ -55,6 +69,13 @@ const SubmissionsPage: React.FC = () => {
           status: doc.data().status || 'published' // default to published for old data
         } as FormOverview));
         
+        // Client-side sort by updatedAt desc
+        formsList.sort((a, b) => {
+            const dateA = a.updatedAt?.seconds || a.createdAt?.seconds || 0;
+            const dateB = b.updatedAt?.seconds || b.createdAt?.seconds || 0;
+            return dateB - dateA;
+        });
+
         setForms(formsList);
       } catch (error) {
         console.error("Error fetching forms:", error);
@@ -90,16 +111,22 @@ const SubmissionsPage: React.FC = () => {
       }
       setIsLoadingSubs(true);
       try {
-        const q = query(collection(db, 'forms', selectedFormId, 'submissions'), orderBy('submittedAt', 'desc'), limit(50));
+        // Removed orderBy to prevent index/permission errors
+        const q = query(collection(db, 'forms', selectedFormId, 'submissions'), limit(50));
         const querySnapshot = await getDocs(q);
         const subsList = querySnapshot.docs.map(doc => {
             const data = doc.data();
             return {
                 id: doc.id,
                 date: data.submittedAt ? new Date(data.submittedAt.seconds * 1000).toLocaleString() : 'Unknown Date',
+                timestamp: data.submittedAt ? data.submittedAt.seconds : 0,
                 data: data.responses || {}
             } as Submission;
         });
+        
+        // Client-side sort
+        subsList.sort((a, b) => b.timestamp - a.timestamp);
+
         setSubmissions(subsList);
       } catch (error) {
         console.error("Error fetching submissions:", error);
@@ -121,7 +148,18 @@ const SubmissionsPage: React.FC = () => {
               formData: {
                   title: form.title,
                   description: form.description,
-                  fields: form.fields
+                  fields: form.fields || [],
+                  collectEmails: form.collectEmails, // Ensure settings carry over
+                  limitOneResponse: form.limitOneResponse,
+                  restrictToOrg: form.restrictToOrg,
+                  allowResponseEditing: form.allowResponseEditing,
+                  showProgressBar: form.showProgressBar,
+                  shuffleQuestions: form.shuffleQuestions,
+                  collaborators: form.collaborators,
+                  slug: form.slug,
+                  submitButtonText: form.submitButtonText,
+                  successMessage: form.successMessage,
+                  stats: form.stats
               }
           } 
       });
@@ -178,7 +216,7 @@ const SubmissionsPage: React.FC = () => {
                       )}
                   </div>
                   <div className={`flex justify-between text-xs ${selectedFormId === form.id && viewMode === 'published' ? 'text-white/80' : 'text-black/50 dark:text-white/50'}`}>
-                    <span>{new Date((form.updatedAt || form.createdAt)?.seconds * 1000).toLocaleDateString()}</span>
+                    <span>{form.updatedAt ? new Date(form.updatedAt.seconds * 1000).toLocaleDateString() : 'Just now'}</span>
                     {viewMode === 'published' && <span>{form.stats?.responses || 0} responses</span>}
                   </div>
                 </button>
@@ -213,6 +251,17 @@ const SubmissionsPage: React.FC = () => {
                         <p className="text-sm text-black/60 dark:text-white/60">Overview and Submissions</p>
                     </div>
                     <div className="flex gap-2">
+                         <button 
+                            onClick={() => {
+                                const url = `${window.location.origin}/#/form/${selectedForm.slug || selectedForm.id}`;
+                                navigator.clipboard.writeText(url);
+                                alert("Link copied to clipboard!");
+                            }}
+                            className="px-4 py-2 rounded-lg border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-sm font-bold transition-colors flex items-center gap-2"
+                        >
+                            <span className="material-symbols-outlined text-base">share</span>
+                            Share
+                        </button>
                         <Link to="/analytics" className="px-4 py-2 rounded-lg border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-sm font-bold transition-colors">
                         Full Analytics
                         </Link>

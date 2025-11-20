@@ -9,7 +9,7 @@ export interface LogicRule {
 export interface FormField {
   id: string;
   label: string;
-  type: 'text' | 'email' | 'number' | 'textarea' | 'select' | 'checkbox' | 'radio' | 'phone' | 'file' | 'image';
+  type: 'text' | 'email' | 'number' | 'textarea' | 'select' | 'checkbox' | 'radio' | 'phone' | 'file' | 'image' | 'date' | 'time' | 'html' | 'quote' | 'youtube' | 'countdown' | 'url' | 'stripe' | 'paypal' | 'product' | 'rating' | 'slider' | 'signature';
   placeholder?: string;
   helperText?: string;
   options?: string[];
@@ -17,6 +17,20 @@ export interface FormField {
   minLength?: number;
   maxLength?: number;
   logic?: LogicRule[];
+  
+  // New properties for rich fields
+  content?: string; // For HTML, Quote text
+  author?: string; // For Quote author
+  videoUrl?: string; // For Youtube
+  targetDate?: string; // For Countdown
+
+  // Commerce & Advanced properties
+  price?: number;
+  currency?: string;
+  productImage?: string;
+  min?: number;
+  max?: number;
+  step?: number;
 }
 
 export interface FormStats {
@@ -31,6 +45,7 @@ export interface GeneratedForm {
   description: string;
   submitButtonText?: string;
   successMessage?: string;
+  slug?: string; // Custom URL slug
   
   // Settings
   collectEmails?: boolean;

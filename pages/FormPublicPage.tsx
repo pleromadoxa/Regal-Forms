@@ -1,43 +1,23 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import { doc, getDoc, collection, addDoc, serverTimestamp, updateDoc, increment, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../services/firebase';
 import { GeneratedForm, FormField } from '../types';
 
-const DEMO_FORM: GeneratedForm = {
-  title: "Product Demo Request",
-  description: "Experience the power of Regal Forms firsthand. This is a live preview of a generated form.",
-  submitButtonText: "Request Demo",
-  successMessage: "Thanks for trying out the demo!",
-  collectEmails: true,
-  limitOneResponse: false,
-  showProgressBar: true,
-  fields: [
-    { id: 'd1', label: 'Full Name', type: 'text', required: true, placeholder: 'Jane Doe' },
-    { id: 'd2', label: 'Work Email', type: 'email', required: true, placeholder: 'jane@company.com' },
-    { id: 'd3', label: 'Company Size', type: 'select', options: ['1-10', '11-50', '51-200', '201+'], required: true },
-    { id: 'd4', label: 'Interest Level', type: 'slider', min: 0, max: 10, step: 1, required: false },
-    { id: 'd5', label: 'What features are you interested in?', type: 'checkbox', options: ['AI Generation', 'Analytics', 'Integrations'], required: false },
-    { id: 'd6', label: 'Additional Notes', type: 'textarea', required: false }
-  ]
-};
+const FormPublicPage: React.FC = () => {
+  const { slug } = useParams<{ slug: string }>();
+  
+  const [form, setForm] = useState<GeneratedForm | null>(null);
+  const [formId, setFormId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-const FormPreviewPage: React.FC = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  
-  // Robust fallback: Use passed formData if available, otherwise use DEMO_FORM.
-  // This handles direct navigation and empty state objects.
-  const form = (location.state?.formData as GeneratedForm) || DEMO_FORM;
-  const formId = location.state?.formId || 'demo-form';
-  
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [visibleFields, setVisibleFields] = useState<Record<string, boolean>>({});
-  
   const [displayFields, setDisplayFields] = useState<FormField[]>([]);
   const [progress, setProgress] = useState(0);
-  const [totalAmount, setTotalAmount] = useState(0);
-  
   const [currentTime, setCurrentTime] = useState(new Date());
 
   const COUNTRY_CODES = [
@@ -52,7 +32,6 @@ const FormPreviewPage: React.FC = () => {
     { code: "+254", name: "KE" }, { code: "+233", name: "GH" }
   ];
 
-  // Timer for countdown
   useEffect(() => {
       const timer = setInterval(() => setCurrentTime(new Date()), 1000);
       return () => clearInterval(timer);
@@ -63,9 +42,7 @@ const FormPreviewPage: React.FC = () => {
       const target = new Date(targetDateStr).getTime();
       const now = currentTime.getTime();
       const diff = target - now;
-
       if (diff <= 0) return { days: 0, hours: 0, minutes: 0, seconds: 0 };
-
       return {
           days: Math.floor(diff / (1000 * 60 * 60 * 24)),
           hours: Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
@@ -76,43 +53,78 @@ const FormPreviewPage: React.FC = () => {
 
   const getYoutubeEmbedUrl = (url?: string) => {
       if (!url) return '';
-      let videoId = '';
       const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
       const match = url.match(regExp);
-      if (match && match[2].length === 11) {
-          videoId = match[2];
-      }
-      return videoId ? `https://www.youtube.com/embed/${videoId}` : '';
+      return (match && match[2].length === 11) ? `https://www.youtube.com/embed/${match[2]}` : '';
   };
 
+  // Fetch Form Logic
   useEffect(() => {
-      if (form) {
-          let fieldsToRender = [...form.fields];
-          if (form.shuffleQuestions) {
-             fieldsToRender = fieldsToRender.sort(() => Math.random() - 0.5);
+      const fetchForm = async () => {
+          if (!slug) return;
+          setLoading(true);
+          try {
+              // Try to find by slug first
+              const q = query(collection(db, 'forms'), where('slug', '==', slug), where('status', '==', 'published'));
+              const slugSnapshot = await getDocs(q);
+
+              let fetchedForm = null;
+              let fetchedId = null;
+
+              if (!slugSnapshot.empty) {
+                  fetchedForm = slugSnapshot.docs[0].data() as GeneratedForm;
+                  fetchedId = slugSnapshot.docs[0].id;
+              } else {
+                  // Fallback: Try ID
+                  const docRef = doc(db, 'forms', slug);
+                  const docSnap = await getDoc(docRef);
+                  if (docSnap.exists() && docSnap.data().status === 'published') {
+                      fetchedForm = docSnap.data() as GeneratedForm;
+                      fetchedId = docSnap.id;
+                  }
+              }
+
+              if (fetchedForm && fetchedId) {
+                  setForm(fetchedForm);
+                  setFormId(fetchedId);
+                  
+                  // Increment View Count
+                  await updateDoc(doc(db, 'forms', fetchedId), {
+                      'stats.views': increment(1)
+                  });
+
+                  // Setup Display
+                  let fieldsToRender = [...fetchedForm.fields];
+                  if (fetchedForm.shuffleQuestions) {
+                      fieldsToRender = fieldsToRender.sort(() => Math.random() - 0.5);
+                  }
+                  setDisplayFields(fieldsToRender);
+                  const initialVisibility: Record<string, boolean> = {};
+                  fetchedForm.fields.forEach(f => initialVisibility[f.id] = true);
+                  setVisibleFields(initialVisibility);
+
+              } else {
+                  setError('Form not found or not published.');
+              }
+          } catch (err: any) {
+              console.error(err);
+              setError('Error loading form.');
+          } finally {
+              setLoading(false);
           }
-          setDisplayFields(fieldsToRender);
+      };
+      fetchForm();
+  }, [slug]);
 
-          const initialVisibility: Record<string, boolean> = {};
-          form.fields.forEach(f => initialVisibility[f.id] = true);
-          setVisibleFields(initialVisibility);
-      }
-  }, [form]);
-
-  // Logic Evaluation Engine
+  // Logic Engine
   useEffect(() => {
       if (!form) return;
-
       const newVisibility: Record<string, boolean> = {};
-      let hasChanges = false;
-
       form.fields.forEach(field => {
           let shouldBeVisible = true;
           const rules = field.logic || [];
-          
           if (rules.length > 0) {
               const hasShowRules = rules.some(r => !r.action || r.action === 'show');
-              
               if (hasShowRules) {
                   shouldBeVisible = false; 
                   const showMatch = rules.some(rule => {
@@ -124,7 +136,6 @@ const FormPreviewPage: React.FC = () => {
                       return false;
                   });
                   if (showMatch) shouldBeVisible = true;
-
               } else {
                   shouldBeVisible = true; 
                   const hideMatch = rules.some(rule => {
@@ -140,90 +151,93 @@ const FormPreviewPage: React.FC = () => {
           }
           newVisibility[field.id] = shouldBeVisible;
       });
+      setVisibleFields(newVisibility);
 
-      const changed = Object.keys(newVisibility).some(key => newVisibility[key] !== visibleFields[key]);
-      if (changed) {
-          setVisibleFields(newVisibility);
-      }
-
-      // Calculate Progress
       const visibleInputFields = Object.keys(newVisibility).filter(id => {
           const field = form.fields.find(f => f.id === id);
-          return newVisibility[id] && field && !['html', 'quote', 'youtube', 'countdown', 'stripe', 'paypal'].includes(field.type);
+          return newVisibility[id] && field && !['html', 'quote', 'youtube', 'countdown'].includes(field.type);
       });
       const filledCount = visibleInputFields.filter(id => formValues[id] && formValues[id].trim() !== "").length;
       const totalCount = visibleInputFields.length;
       const newProgress = totalCount === 0 ? 0 : Math.round((filledCount / totalCount) * 100);
       setProgress(newProgress);
 
-      // Calculate Total for Products
-      let total = 0;
-      form.fields.forEach(f => {
-          if (f.type === 'product' && visibleFields[f.id] && formValues[f.id] === 'selected') {
-              total += f.price || 0;
-          }
-      });
-      setTotalAmount(total);
-
-  }, [formValues, form, visibleFields]); 
+  }, [formValues, form]);
 
   const handleInputChange = (fieldId: string, value: string) => {
-      setFormValues(prev => ({
-          ...prev,
-          [fieldId]: value
-      }));
+      setFormValues(prev => ({ ...prev, [fieldId]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
-      setIsSubmitted(true);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+      if (!formId || !form) return;
+      
+      setLoading(true);
+      try {
+          const userLocale = navigator.language || 'en-US';
+          const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-  const handleReturn = () => {
-      if (form && formId !== 'demo-form') {
-          navigate('/create', {
-              state: {
-                  formData: form,
-                  formId: formId
-              }
+          // Log specific submission
+          await addDoc(collection(db, 'forms', formId, 'submissions'), {
+              responses: formValues,
+              submittedAt: serverTimestamp(),
+              meta: { locale: userLocale, timeZone: userTimeZone }
           });
-      } else {
-          navigate('/create');
+
+          // Log global activity for admin dashboard
+          await addDoc(collection(db, 'activity_logs'), {
+              type: 'submission',
+              formId: formId,
+              formTitle: form.title,
+              submittedAt: serverTimestamp(),
+              locale: userLocale,
+              timeZone: userTimeZone
+          });
+          
+          await updateDoc(doc(db, 'forms', formId), {
+              'stats.responses': increment(1)
+          });
+
+          setIsSubmitted(true);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+      } catch (err) {
+          console.error("Submission error", err);
+          alert("Failed to submit form. Please try again.");
+      } finally {
+          setLoading(false);
       }
   };
 
-  const handleEditResponse = () => {
-      setIsSubmitted(false);
-  };
-
-  if (!form) {
-     return (
-         <div className="flex flex-col items-center justify-center h-screen bg-background-light dark:bg-background-dark text-center p-8">
-             <div className="size-20 bg-primary/10 rounded-full flex items-center justify-center text-primary mb-4">
-                 <span className="material-symbols-outlined text-4xl">visibility_off</span>
-             </div>
-             <h2 className="text-2xl font-bold mb-2">No Preview Available</h2>
-             <p className="text-black/60 dark:text-white/60 mb-6">Return to the editor to create or open a form.</p>
-             <Link to="/create" className="px-6 py-3 bg-primary text-white rounded-lg font-bold hover:bg-orange-600">Go to Builder</Link>
-         </div>
-     );
+  if (loading) {
+      return (
+          <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark">
+              <div className="flex flex-col items-center gap-4">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                  <p className="text-black/60 dark:text-white/60 animate-pulse">Loading form...</p>
+              </div>
+          </div>
+      );
   }
+
+  if (error) {
+      return (
+          <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark p-4">
+              <div className="text-center max-w-md bg-white dark:bg-white/5 p-8 rounded-xl border border-black/10 dark:border-white/10 shadow-lg">
+                  <span className="material-symbols-outlined text-5xl text-red-500 mb-4">error</span>
+                  <h2 className="text-2xl font-bold mb-2">Oops!</h2>
+                  <p className="text-black/60 dark:text-white/60 mb-6">{error}</p>
+                  <a href="/" className="text-primary font-bold hover:underline">Go to Regal Forms Home</a>
+              </div>
+          </div>
+      );
+  }
+
+  if (!form) return null;
 
   return (
     <div className="font-display antialiased bg-[#f5f5f5] dark:bg-[#0d253f] text-[#4a4a4a] dark:text-[#e0e0e0] min-h-screen flex flex-col">
-      <header className="sticky top-0 z-10 flex w-full items-center justify-between whitespace-nowrap border-b border-[#e5e7eb] dark:border-[#374151] bg-[#ffffff] dark:bg-[#1a2f4a] px-4 py-3 shadow-sm sm:px-6 md:px-8">
-        <div className="flex items-center gap-4">
-          <span className="material-symbols-outlined text-[#ff9a00]">visibility</span>
-          <h2 className="hidden text-lg font-bold leading-tight sm:block">Form Preview {formId === 'demo-form' && '(Demo Mode)'}</h2>
-        </div>
-        <button onClick={handleReturn} className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-[#ff9a00] px-4 py-2 text-sm font-bold text-white transition-opacity hover:opacity-90">
-          {formId === 'demo-form' ? 'Create Your Own' : 'Return to Editor'}
-        </button>
-      </header>
-      
       {form.showProgressBar && !isSubmitted && (
-          <div className="sticky top-[61px] z-10 w-full h-1.5 bg-gray-200 dark:bg-gray-700">
+          <div className="sticky top-0 z-50 w-full h-1.5 bg-gray-200 dark:bg-gray-700">
               <div className="h-full bg-[#ff9a00] transition-all duration-500 ease-out" style={{ width: `${progress}%` }}></div>
           </div>
       )}
@@ -241,7 +255,7 @@ const FormPreviewPage: React.FC = () => {
                     <div className="flex flex-col gap-3">
                         <button onClick={() => { setIsSubmitted(false); setFormValues({}); window.scrollTo(0,0); }} className="text-[#ff9a00] font-bold hover:underline">Submit another response</button>
                         {form.allowResponseEditing && (
-                            <button onClick={handleEditResponse} className="text-black/60 dark:text-white/60 text-sm font-medium hover:text-[#ff9a00] flex items-center justify-center gap-1">
+                            <button onClick={() => setIsSubmitted(false)} className="text-black/60 dark:text-white/60 text-sm font-medium hover:text-[#ff9a00] flex items-center justify-center gap-1">
                                 <span className="material-symbols-outlined text-base">edit</span> Edit your response
                             </button>
                         )}
@@ -251,7 +265,7 @@ const FormPreviewPage: React.FC = () => {
                 <>
                     <div className="flex flex-col gap-3 border-b-4 border-[#ff9a00] p-6 bg-[#ffffff] dark:bg-[#1a2f4a]">
                         <h1 className="font-display text-4xl font-black tracking-tight text-[#0d253f] dark:text-white">{form.title}</h1>
-                        <p className="font-display text-base font-normal leading-normal opacity-80">{form.description}</p>
+                        <p className="font-display text-base font-normal leading-normal opacity-80 whitespace-pre-wrap">{form.description}</p>
                         {form.collectEmails && (
                              <div className="mt-2 flex items-center gap-2 text-sm text-black/60 dark:text-white/60 bg-black/5 dark:bg-white/5 p-2 rounded w-fit">
                                 <span className="material-symbols-outlined text-base">info</span>
@@ -263,7 +277,6 @@ const FormPreviewPage: React.FC = () => {
                     {displayFields.map((field) => {
                         if (!visibleFields[field.id]) return null;
                         
-                        // Non-Input Fields (Visuals)
                         if (field.type === 'html') {
                             return (
                                 <div key={field.id} className="animate-fade-in prose dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: field.content || '' }} />
@@ -284,13 +297,7 @@ const FormPreviewPage: React.FC = () => {
                              return (
                                  <div key={field.id} className="animate-fade-in w-full aspect-video rounded-lg overflow-hidden shadow-sm bg-black">
                                     {embedUrl ? (
-                                        <iframe 
-                                            src={embedUrl} 
-                                            className="w-full h-full" 
-                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                            allowFullScreen 
-                                            title="YouTube Video"
-                                        ></iframe>
+                                        <iframe src={embedUrl} className="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen title="YouTube Video"></iframe>
                                     ) : (
                                         <div className="flex items-center justify-center h-full text-white/50">Invalid Video URL</div>
                                     )}
@@ -306,9 +313,7 @@ const FormPreviewPage: React.FC = () => {
                                     <div className="flex gap-4 sm:gap-8">
                                         {[['Days', time.days], ['Hours', time.hours], ['Minutes', time.minutes], ['Seconds', time.seconds]].map(([label, val]) => (
                                             <div key={label as string} className="flex flex-col items-center">
-                                                <span className="text-3xl sm:text-5xl font-black tabular-nums">
-                                                    {String(val).padStart(2, '0')}
-                                                </span>
+                                                <span className="text-3xl sm:text-5xl font-black tabular-nums">{String(val).padStart(2, '0')}</span>
                                                 <span className="text-[10px] sm:text-xs uppercase tracking-wider opacity-60">{label}</span>
                                             </div>
                                         ))}
@@ -317,126 +322,6 @@ const FormPreviewPage: React.FC = () => {
                             );
                         }
 
-                        // Product Field
-                        if (field.type === 'product') {
-                            const isSelected = formValues[field.id] === 'selected';
-                            return (
-                                <div key={field.id} 
-                                     className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all cursor-pointer animate-fade-in ${isSelected ? 'border-[#ff9a00] bg-[#ff9a00]/10' : 'border-[#e5e7eb] dark:border-[#374151] hover:border-[#ff9a00]/50'}`}
-                                     onClick={() => handleInputChange(field.id, isSelected ? '' : 'selected')}
-                                >
-                                    <div className="flex items-center gap-4">
-                                        <div className={`size-6 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-[#ff9a00] bg-[#ff9a00]' : 'border-[#374151] dark:border-white/30'}`}>
-                                            {isSelected && <span className="material-symbols-outlined text-white text-sm">check</span>}
-                                        </div>
-                                        <div>
-                                            <h3 className="font-bold text-lg">{field.label}</h3>
-                                            <p className="text-sm text-black/60 dark:text-white/60">Click to select this item</p>
-                                        </div>
-                                    </div>
-                                    <div className="text-xl font-black text-[#0d253f] dark:text-white">
-                                        {field.price} <span className="text-sm font-medium text-black/50 dark:text-white/50">{field.currency || 'USD'}</span>
-                                    </div>
-                                </div>
-                            )
-                        }
-
-                        // Payment Fields (Mock)
-                        if (field.type === 'stripe') {
-                             return (
-                                 <div key={field.id} className="animate-fade-in">
-                                     <label className="text-base font-medium mb-2 block">{field.label}</label>
-                                     <div className="p-4 rounded-lg border border-[#e5e7eb] dark:border-[#374151] bg-[#f5f5f5] dark:bg-[#0d253f]">
-                                         <div className="flex gap-2 mb-3">
-                                            <div className="h-8 w-12 bg-gray-300 rounded"></div>
-                                            <div className="h-8 w-12 bg-gray-300 rounded"></div>
-                                            <div className="h-8 w-12 bg-gray-300 rounded"></div>
-                                         </div>
-                                         <div className="grid gap-3">
-                                             <input disabled type="text" placeholder="Card number" className="w-full p-3 rounded border dark:border-white/10 bg-white dark:bg-black/20" />
-                                             <div className="flex gap-3">
-                                                 <input disabled type="text" placeholder="MM / YY" className="w-1/2 p-3 rounded border dark:border-white/10 bg-white dark:bg-black/20" />
-                                                 <input disabled type="text" placeholder="CVC" className="w-1/2 p-3 rounded border dark:border-white/10 bg-white dark:bg-black/20" />
-                                             </div>
-                                         </div>
-                                         <button disabled type="button" className="w-full mt-3 py-3 bg-[#635BFF] text-white font-bold rounded-lg opacity-90">Pay Now</button>
-                                     </div>
-                                 </div>
-                             )
-                        }
-
-                        if (field.type === 'paypal') {
-                            return (
-                                <div key={field.id} className="animate-fade-in">
-                                    <button type="button" disabled className="w-full py-3 rounded-lg bg-[#FFC439] text-black font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
-                                        <span className="material-symbols-outlined">account_balance_wallet</span> Pay with PayPal
-                                    </button>
-                                </div>
-                            )
-                        }
-
-                        // Rating Field
-                        if (field.type === 'rating') {
-                            const max = field.max || 5;
-                            const currentRating = parseInt(formValues[field.id] || '0');
-                            return (
-                                <div key={field.id} className="flex flex-col gap-2 animate-fade-in">
-                                    <label className="text-base font-medium">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
-                                    <div className="flex gap-1">
-                                        {Array.from({length: max}).map((_, i) => (
-                                            <button 
-                                                key={i} 
-                                                type="button"
-                                                onClick={() => handleInputChange(field.id, (i+1).toString())}
-                                                className={`text-3xl transition-colors ${i < currentRating ? 'text-yellow-400 scale-110' : 'text-gray-300 dark:text-gray-600 hover:text-yellow-200'}`}
-                                            >
-                                                <span className="material-symbols-outlined" style={{ fontVariationSettings: `'FILL' ${i < currentRating ? 1 : 0}` }}>star</span>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )
-                        }
-
-                        // Slider Field
-                        if (field.type === 'slider') {
-                            return (
-                                <div key={field.id} className="flex flex-col gap-2 animate-fade-in">
-                                     <div className="flex justify-between">
-                                        <label className="text-base font-medium">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
-                                        <span className="font-bold text-[#ff9a00]">{formValues[field.id] || field.min || 0}</span>
-                                     </div>
-                                     <input 
-                                        type="range" 
-                                        min={field.min || 0} 
-                                        max={field.max || 100} 
-                                        step={field.step || 1}
-                                        value={formValues[field.id] || field.min || 0}
-                                        onChange={(e) => handleInputChange(field.id, e.target.value)}
-                                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-[#ff9a00]"
-                                     />
-                                     <div className="flex justify-between text-xs text-black/50 dark:text-white/50">
-                                         <span>{field.min || 0}</span>
-                                         <span>{field.max || 100}</span>
-                                     </div>
-                                </div>
-                            )
-                        }
-
-                        // Signature Field
-                        if (field.type === 'signature') {
-                            return (
-                                <div key={field.id} className="flex flex-col gap-2 animate-fade-in">
-                                    <label className="text-base font-medium">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
-                                    <div className="w-full h-32 border-2 border-dashed border-[#e5e7eb] dark:border-[#374151] bg-white dark:bg-[#0d253f] rounded-lg flex items-center justify-center relative group cursor-crosshair hover:border-[#ff9a00]">
-                                        <span className="text-black/30 dark:text-white/30 pointer-events-none select-none">Sign Here (Mockup)</span>
-                                        <div className="absolute bottom-2 right-2 text-xs text-black/40 dark:text-white/40">Clear</div>
-                                    </div>
-                                </div>
-                            )
-                        }
-
-                        // Standard Inputs
                         return (
                             <div key={field.id} className="flex flex-col gap-2 animate-fade-in">
                                 <label className="text-base font-medium">
@@ -490,17 +375,11 @@ const FormPreviewPage: React.FC = () => {
                             </div>
                         );
                     })}
-
-                    {totalAmount > 0 && (
-                        <div className="flex justify-between items-center p-6 bg-background-light dark:bg-white/5 rounded-xl border-2 border-[#ff9a00] animate-fade-in">
-                            <span className="text-xl font-bold">Total Amount</span>
-                            <span className="text-3xl font-black text-[#ff9a00]">{totalAmount.toFixed(2)}</span>
-                        </div>
-                    )}
-
                     <div className="mt-4 flex flex-col items-center gap-4 border-t border-[#e5e7eb] dark:border-[#374151] pt-6 sm:flex-row sm:justify-between">
-                        <button type="submit" className="w-full rounded-lg bg-[#0d253f] dark:bg-[#ff9a00] px-6 py-3 text-base font-bold text-white sm:w-auto hover:opacity-90 shadow-lg shadow-[#ff9a00]/20 transition-transform active:scale-95">{form.submitButtonText || 'Submit'}</button>
-                        <p className="text-xs text-[#6b7280] dark:text-white/90">This form is in preview mode.</p>
+                        <button type="submit" disabled={loading} className="w-full rounded-lg bg-[#0d253f] dark:bg-[#ff9a00] px-6 py-3 text-base font-bold text-white sm:w-auto hover:opacity-90 shadow-lg shadow-[#ff9a00]/20 transition-transform active:scale-95 disabled:opacity-70">
+                            {loading ? 'Sending...' : (form.submitButtonText || 'Submit')}
+                        </button>
+                        <p className="text-xs text-[#6b7280] dark:text-white/50">Powered by Regal Forms</p>
                     </div>
                     </form>
                 </>
@@ -512,4 +391,4 @@ const FormPreviewPage: React.FC = () => {
   );
 };
 
-export default FormPreviewPage;
+export default FormPublicPage;

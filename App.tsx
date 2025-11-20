@@ -11,6 +11,9 @@ import IntegrationsPage from './pages/IntegrationsPage';
 import FeaturesPage from './pages/FeaturesPage';
 import SubmissionsPage from './pages/SubmissionsPage';
 import FormSettingsPage from './pages/FormSettingsPage';
+import ProfileSettingsPage from './pages/ProfileSettingsPage';
+import FormPublicPage from './pages/FormPublicPage';
+import AdminDashboard from './pages/AdminDashboard';
 import { CareersPage, ContactPage } from './pages/CompanyPages';
 import { BlogPage, HelpCenterPage, ApiDocsPage } from './pages/ResourcePages';
 import { PrivacyPage, TermsPage } from './pages/LegalPages';
@@ -107,10 +110,19 @@ const App: React.FC = () => {
           <Route path="/signup" element={<SignUpPage />} />
           <Route path="/login" element={<SignUpPage isLogin={true} />} />
           
-          {/* Public Form Preview */}
+          {/* Public Form Preview & Live View */}
           <Route path="/preview" element={<FormPreviewPage />} />
+          <Route path="/form/:slug" element={<FormPublicPage />} />
 
           {/* Protected Routes */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/create"
             element={
@@ -126,6 +138,16 @@ const App: React.FC = () => {
             element={
               <ProtectedRoute>
                 <FormSettingsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <ProfileSettingsPage />
+                </Layout>
               </ProtectedRoute>
             }
           />
