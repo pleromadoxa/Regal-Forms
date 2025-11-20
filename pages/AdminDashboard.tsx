@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { collection, getDocs, query, limit, orderBy } from 'firebase/firestore';
 import { db } from '../services/firebase';
@@ -179,7 +179,7 @@ const AdminDashboard: React.FC = () => {
                 </button>
             </nav>
 
-            <div className="p-4 border-t border-white/10">
+            <div className="p-4 border-t border-white/10 flex flex-col gap-4">
                 <div className="flex items-center gap-3 bg-white/5 p-3 rounded-lg">
                     <div className="size-8 rounded-full bg-primary flex items-center justify-center font-bold text-white">
                         {currentUser?.email?.charAt(0).toUpperCase()}
@@ -189,6 +189,10 @@ const AdminDashboard: React.FC = () => {
                         <p className="text-xs text-green-400">Super Admin</p>
                     </div>
                 </div>
+                <Link to="/" className="flex items-center justify-center gap-2 p-3 rounded-lg bg-white/10 hover:bg-white/20 text-sm font-bold text-white transition-colors">
+                    <span className="material-symbols-outlined">home</span>
+                    Main App
+                </Link>
             </div>
         </aside>
 

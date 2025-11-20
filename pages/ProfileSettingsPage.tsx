@@ -1,12 +1,15 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { updateProfile, updatePassword, updateEmail } from 'firebase/auth';
+import { updateProfile, updatePassword, deleteUser } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage } from '../services/firebase';
+import { collection, query, where, getDocs, doc, deleteDoc, getDoc } from 'firebase/firestore';
+import { storage, db } from '../services/firebase';
+import { useNavigate } from 'react-router-dom';
 
 const ProfileSettingsPage: React.FC = () => {
   const { currentUser } = useAuth();
+  const navigate = useNavigate();
   
   // Profile State
   const [firstName, setFirstName] = useState('');
@@ -22,6 +25,11 @@ const ProfileSettingsPage: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isSecuritySaving, setIsSecuritySaving] = useState(false);
   const [securityMsg, setSecurityMsg] = useState<{type: 'success'|'error', text: string} | null>(null);
+
+  // Data Management State
+  const [isExporting, setIsExporting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     if (currentUser) {
@@ -110,6 +118,78 @@ const ProfileSettingsPage: React.FC = () => {
     }
   };
 
+  const handleExportData = async () => {
+      if (!currentUser) return;
+      setIsExporting(true);
+      try {
+          // 1. Fetch Profile Data
+          const profileData = {
+              uid: currentUser.uid,
+              email: currentUser.email,
+              displayName: currentUser.displayName,
+              photoURL: currentUser.photoURL,
+          };
+
+          // 2. Fetch Forms
+          const formsQuery = query(collection(db, 'forms'), where('userId', '==', currentUser.uid));
+          const formsSnap = await getDocs(formsQuery);
+          const formsData = formsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+          const exportPackage = {
+              profile: profileData,
+              forms: formsData,
+              exportedAt: new Date().toISOString(),
+          };
+
+          // Create Blob and Download
+          const jsonString = JSON.stringify(exportPackage, null, 2);
+          const blob = new Blob([jsonString], { type: "application/json" });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `regal-forms-export-${currentUser.uid}.json`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+
+      } catch (error) {
+          console.error("Export failed:", error);
+          alert("Failed to export data. Please try again.");
+      } finally {
+          setIsExporting(false);
+      }
+  };
+
+  const handleDeleteAccount = async () => {
+      if (!currentUser) return;
+      setIsDeleting(true);
+      try {
+          // 1. Delete User's Forms (Top-level docs only, Firebase doesn't recursive delete client-side easily)
+          const formsQuery = query(collection(db, 'forms'), where('userId', '==', currentUser.uid));
+          const formsSnap = await getDocs(formsQuery);
+          const deletePromises = formsSnap.docs.map(doc => deleteDoc(doc.ref));
+          await Promise.all(deletePromises);
+
+          // 2. Delete User Document
+          await deleteDoc(doc(db, 'users', currentUser.uid));
+
+          // 3. Delete Auth User
+          await deleteUser(currentUser);
+          
+          navigate('/');
+      } catch (error: any) {
+          console.error("Delete account failed:", error);
+          if (error.code === 'auth/requires-recent-login') {
+              alert("Security Check: Please log out and log back in to verify your identity before deleting your account.");
+          } else {
+              alert("Failed to delete account: " + error.message);
+          }
+          setIsDeleting(false);
+          setShowDeleteConfirm(false);
+      }
+  };
+
   const scrollToSection = (id: string) => {
       const el = document.getElementById(id);
       if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -143,13 +223,9 @@ const ProfileSettingsPage: React.FC = () => {
                 <span className="material-symbols-outlined text-xl">lock</span>
                 <p className="text-sm font-medium leading-normal">Security</p>
               </button>
-              <button onClick={() => scrollToSection('notifications')} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 text-black/70 dark:text-white/70 text-left">
-                <span className="material-symbols-outlined text-xl">notifications</span>
-                <p className="text-sm font-medium leading-normal">Notifications</p>
-              </button>
-              <button onClick={() => scrollToSection('subscription')} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 text-black/70 dark:text-white/70 text-left">
-                <span className="material-symbols-outlined text-xl">credit_card</span>
-                <p className="text-sm font-medium leading-normal">Subscription</p>
+              <button onClick={() => scrollToSection('data')} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 text-black/70 dark:text-white/70 text-left">
+                 <span className="material-symbols-outlined text-xl">database</span>
+                 <p className="text-sm font-medium leading-normal">Data & Privacy</p>
               </button>
             </nav>
           </div>
@@ -313,71 +389,80 @@ const ProfileSettingsPage: React.FC = () => {
               </div>
             </section>
 
-            {/* Notifications Section */}
-            <section className="mt-10 space-y-6 scroll-mt-28" id="notifications">
-              <h2 className="text-xl font-bold">Notifications</h2>
-              <div className="p-6 bg-white dark:bg-white/5 rounded-xl border border-black/10 dark:border-white/10 divide-y divide-black/5 dark:divide-white/5">
-                <div className="flex items-center justify-between py-4">
-                  <div>
-                    <p className="font-semibold">New Form Responses</p>
-                    <p className="text-sm text-black/60 dark:text-white/60">Get notified when someone submits a response to your form.</p>
-                  </div>
-                  <label className="relative inline-flex cursor-pointer items-center">
-                    <input type="checkbox" className="peer sr-only" defaultChecked />
-                    <div className="peer h-6 w-11 rounded-full bg-gray-200 dark:bg-gray-700 after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none"></div>
-                  </label>
-                </div>
-                <div className="flex items-center justify-between py-4">
-                  <div>
-                    <p className="font-semibold">Product Updates</p>
-                    <p className="text-sm text-black/60 dark:text-white/60">Receive emails about new features and product improvements.</p>
-                  </div>
-                  <label className="relative inline-flex cursor-pointer items-center">
-                    <input type="checkbox" className="peer sr-only" />
-                    <div className="peer h-6 w-11 rounded-full bg-gray-200 dark:bg-gray-700 after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none"></div>
-                  </label>
-                </div>
-                <div className="flex items-center justify-between py-4">
-                  <div>
-                    <p className="font-semibold">Security Alerts</p>
-                    <p className="text-sm text-black/60 dark:text-white/60">Get critical alerts about your account security.</p>
-                  </div>
-                  <label className="relative inline-flex cursor-pointer items-center">
-                    <input type="checkbox" className="peer sr-only" defaultChecked />
-                    <div className="peer h-6 w-11 rounded-full bg-gray-200 dark:bg-gray-700 after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none"></div>
-                  </label>
-                </div>
-              </div>
+            {/* Data & Privacy Section */}
+            <section className="mt-10 space-y-6 scroll-mt-28" id="data">
+                 <h2 className="text-xl font-bold">Data & Privacy</h2>
+                 
+                 {/* Export */}
+                 <div className="p-6 bg-white dark:bg-white/5 rounded-xl border border-black/10 dark:border-white/10">
+                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+                         <div>
+                             <h3 className="text-lg font-semibold">Export Your Data</h3>
+                             <p className="text-sm text-black/60 dark:text-white/60 mt-1">Download a copy of your profile information and form configurations.</p>
+                         </div>
+                         <button 
+                             onClick={handleExportData}
+                             disabled={isExporting}
+                             className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 font-semibold text-sm transition-colors disabled:opacity-70"
+                         >
+                             <span className={`material-symbols-outlined ${isExporting ? 'animate-spin' : ''}`}>{isExporting ? 'refresh' : 'download'}</span>
+                             {isExporting ? 'Exporting...' : 'Export Data'}
+                         </button>
+                     </div>
+                 </div>
+
+                 {/* Danger Zone */}
+                 <div className="p-6 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-200 dark:border-red-900/30">
+                     <h3 className="text-lg font-bold text-red-700 dark:text-red-400 mb-4">Danger Zone</h3>
+                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+                         <div>
+                             <p className="font-semibold text-red-900 dark:text-red-300">Delete Account</p>
+                             <p className="text-sm text-red-800/70 dark:text-red-300/70 mt-1">Permanently delete your account and all associated forms. This action cannot be undone.</p>
+                         </div>
+                         <button 
+                             onClick={() => setShowDeleteConfirm(true)}
+                             className="px-4 py-2 rounded-lg bg-red-600 text-white font-bold text-sm hover:bg-red-700 transition-colors whitespace-nowrap"
+                         >
+                             Delete Account
+                         </button>
+                     </div>
+                 </div>
             </section>
 
-            {/* Subscription Section */}
-            <section className="mt-10 space-y-6 scroll-mt-28" id="subscription">
-              <h2 className="text-xl font-bold">Subscription & Billing</h2>
-              <div className="p-6 bg-white dark:bg-white/5 rounded-xl border border-black/10 dark:border-white/10">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="font-semibold">Current Plan</p>
-                    <p className="text-3xl font-bold mt-1">Free Plan</p>
-                    <p className="text-sm text-green-600 dark:text-green-400 font-medium mt-1">Active</p>
-                  </div>
-                  <div>
-                    <p className="font-semibold">Usage</p>
-                    <p className="text-lg mt-1 text-black/60 dark:text-white/60">2 / 5 Forms</p>
-                    <p className="text-sm text-black/60 dark:text-white/60">Upgrade for unlimited forms</p>
-                  </div>
-                  <button className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-semibold leading-normal hover:bg-orange-600 transition-colors w-full sm:w-auto shadow-lg shadow-primary/20">
-                    <span className="truncate">Upgrade to Pro</span>
-                  </button>
-                </div>
-                <div className="mt-6 pt-6 border-t border-black/10 dark:border-white/10">
-                  <h3 className="font-semibold">Billing History</h3>
-                  <p className="text-sm text-black/50 dark:text-white/50 mt-2 italic">No billing history available.</p>
-                </div>
-              </div>
-            </section>
           </div>
         </main>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
+              <div className="bg-white dark:bg-[#1e1e1e] rounded-xl shadow-2xl max-w-sm w-full p-6 border border-black/10 dark:border-white/10">
+                  <div className="size-12 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 flex items-center justify-center mb-4">
+                      <span className="material-symbols-outlined text-2xl">warning</span>
+                  </div>
+                  <h3 className="text-xl font-black mb-2">Delete Account?</h3>
+                  <p className="text-black/60 dark:text-white/60 mb-6">
+                      Are you absolutely sure? This will permanently delete your account, all your forms, and collected data.
+                  </p>
+                  <div className="flex gap-3">
+                      <button 
+                        onClick={() => setShowDeleteConfirm(false)} 
+                        className="flex-1 py-3 rounded-lg font-bold bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+                      >
+                          Cancel
+                      </button>
+                      <button 
+                        onClick={handleDeleteAccount}
+                        disabled={isDeleting}
+                        className="flex-1 py-3 rounded-lg font-bold bg-red-600 text-white hover:bg-red-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-70"
+                      >
+                          {isDeleting && <span className="material-symbols-outlined animate-spin text-sm">refresh</span>}
+                          Delete
+                      </button>
+                  </div>
+              </div>
+          </div>
+      )}
     </div>
   );
 };

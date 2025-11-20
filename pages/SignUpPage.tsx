@@ -98,6 +98,8 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ isLogin = false }) => {
         setError('Password should be at least 6 characters.');
       } else if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
         setError('Invalid email or password.');
+      } else if (err.code === 'auth/network-request-failed') {
+        setError('Network error. Please check your internet connection.');
       } else {
         setError(err.message || 'Failed to sign in. Please try again.');
       }
@@ -118,6 +120,8 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ isLogin = false }) => {
         setError('Sign in cancelled.');
       } else if (err.code === 'auth/cancelled-popup-request') {
         // Ignore multiple clicks
+      } else if (err.code === 'auth/network-request-failed') {
+        setError('Network error. Please check your internet connection.');
       } else {
         // Display the actual error message to help debug (e.g., Unauthorized Domain)
         setError(`Google Sign In failed: ${err.message}`);
@@ -235,8 +239,9 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ isLogin = false }) => {
             </div>
             
             {error && (
-              <div className="mb-6 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-sm animate-fade-in">
-                {error}
+              <div className="mb-6 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-sm animate-fade-in flex items-start gap-2">
+                <span className="material-symbols-outlined text-lg mt-0.5">error</span>
+                <span>{error}</span>
               </div>
             )}
 

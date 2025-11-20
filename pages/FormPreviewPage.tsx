@@ -214,8 +214,13 @@ const FormPreviewPage: React.FC = () => {
     <div className="font-display antialiased bg-[#f5f5f5] dark:bg-[#0d253f] text-[#4a4a4a] dark:text-[#e0e0e0] min-h-screen flex flex-col">
       <header className="sticky top-0 z-10 flex w-full items-center justify-between whitespace-nowrap border-b border-[#e5e7eb] dark:border-[#374151] bg-[#ffffff] dark:bg-[#1a2f4a] px-4 py-3 shadow-sm sm:px-6 md:px-8">
         <div className="flex items-center gap-4">
-          <span className="material-symbols-outlined text-[#ff9a00]">visibility</span>
-          <h2 className="hidden text-lg font-bold leading-tight sm:block">Form Preview {formId === 'demo-form' && '(Demo Mode)'}</h2>
+           <Link to="/" className="flex items-center gap-1 text-sm font-bold text-black/60 dark:text-white/60 hover:text-[#ff9a00] dark:hover:text-[#ff9a00] transition-colors mr-2">
+               <span className="material-symbols-outlined text-lg">arrow_back</span>
+               Home
+           </Link>
+           <div className="h-6 w-px bg-black/10 dark:bg-white/10"></div>
+           <span className="material-symbols-outlined text-[#ff9a00]">visibility</span>
+           <h2 className="hidden text-lg font-bold leading-tight sm:block">Form Preview {formId === 'demo-form' && '(Demo Mode)'}</h2>
         </div>
         <button onClick={handleReturn} className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-[#ff9a00] px-4 py-2 text-sm font-bold text-white transition-opacity hover:opacity-90">
           {formId === 'demo-form' ? 'Create Your Own' : 'Return to Editor'}

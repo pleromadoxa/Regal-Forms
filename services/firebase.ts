@@ -1,7 +1,7 @@
 
 import { initializeApp } from "firebase/app";
 import { getAnalytics, isSupported } from "firebase/analytics";
-import { getAuth, GoogleAuthProvider, setPersistence, browserLocalPersistence } from "firebase/auth";
+import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore, initializeFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
@@ -19,12 +19,6 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const storage = getStorage(app);
 
-// Ensure session persistence
-setPersistence(auth, browserLocalPersistence)
-  .catch((error) => {
-    console.error("Error setting persistence:", error);
-  });
-
 // Initialize Firestore with settings to ignore undefined properties
 const db = initializeFirestore(app, {
   ignoreUndefinedProperties: true
@@ -32,11 +26,13 @@ const db = initializeFirestore(app, {
 
 const googleProvider = new GoogleAuthProvider();
 
-let analytics;
+let analytics: any = null;
 isSupported().then((supported) => {
   if (supported) {
     analytics = getAnalytics(app);
   }
+}).catch((err) => {
+    console.warn("Analytics not supported:", err);
 });
 
 export { app, auth, googleProvider, analytics, db, storage };
