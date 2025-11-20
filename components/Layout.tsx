@@ -1,8 +1,20 @@
+
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const location = useLocation();
+  const { currentUser, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/');
+    } catch (error) {
+      console.error("Failed to log out", error);
+    }
+  };
 
   return (
     <div className="relative flex min-h-screen w-full flex-col group/design-root overflow-x-hidden bg-background-light dark:bg-background-dark text-black dark:text-white">
@@ -19,16 +31,51 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           </Link>
         </div>
         <nav className="hidden lg:flex flex-1 justify-center items-center gap-9">
-          <Link to="/" className="text-black/80 dark:text-white/80 hover:text-primary dark:hover:text-primary text-sm font-medium leading-normal transition-colors">Features</Link>
-          <Link to="/" className="text-black/80 dark:text-white/80 hover:text-primary dark:hover:text-primary text-sm font-medium leading-normal transition-colors">Contact</Link>
+          {currentUser ? (
+            <>
+               <Link to="/create" className="text-black/80 dark:text-white/80 hover:text-primary dark:hover:text-primary text-sm font-medium leading-normal transition-colors">Builder</Link>
+               <Link to="/submissions" className="text-black/80 dark:text-white/80 hover:text-primary dark:hover:text-primary text-sm font-medium leading-normal transition-colors">Submissions</Link>
+               <Link to="/analytics" className="text-black/80 dark:text-white/80 hover:text-primary dark:hover:text-primary text-sm font-medium leading-normal transition-colors">Analytics</Link>
+               <Link to="/templates" className="text-black/80 dark:text-white/80 hover:text-primary dark:hover:text-primary text-sm font-medium leading-normal transition-colors">Templates</Link>
+            </>
+          ) : (
+            <>
+              <Link to="/features" className="text-black/80 dark:text-white/80 hover:text-primary dark:hover:text-primary text-sm font-medium leading-normal transition-colors">Features</Link>
+              <Link to="/contact" className="text-black/80 dark:text-white/80 hover:text-primary dark:hover:text-primary text-sm font-medium leading-normal transition-colors">Contact</Link>
+            </>
+          )}
         </nav>
-        <div className="flex gap-2">
-          <button className="hidden sm:flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary/10 hover:bg-primary/20 text-primary text-sm font-bold transition-colors">
-            <span className="truncate">Login</span>
-          </button>
-          <Link to="/create" className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary hover:bg-orange-600 text-white dark:text-black text-sm font-bold transition-colors">
-            <span className="truncate">Get Started</span>
-          </Link>
+        <div className="flex gap-4 items-center">
+          {currentUser ? (
+             <div className="flex items-center gap-4">
+                <div className="hidden sm:flex flex-col items-end">
+                    <span className="text-sm font-bold leading-none">{currentUser.displayName || 'User'}</span>
+                    <span className="text-xs text-black/50 dark:text-white/50 leading-none mt-1">{currentUser.email}</span>
+                </div>
+                <div className="h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-sm">
+                    {currentUser.photoURL ? (
+                        <img src={currentUser.photoURL} alt="Avatar" className="h-full w-full rounded-full object-cover" />
+                    ) : (
+                        (currentUser.displayName || currentUser.email || 'U').charAt(0).toUpperCase()
+                    )}
+                </div>
+                <button 
+                    onClick={handleLogout}
+                    className="text-sm font-medium text-red-500 hover:text-red-600 transition-colors"
+                >
+                    Logout
+                </button>
+             </div>
+          ) : (
+            <div className="flex gap-2">
+              <Link to="/login" className="hidden sm:flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary/10 hover:bg-primary/20 text-primary text-sm font-bold transition-colors">
+                <span className="truncate">Login</span>
+              </Link>
+              <Link to="/signup" className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary hover:bg-orange-600 text-white dark:text-black text-sm font-bold transition-colors">
+                <span className="truncate">Sign Up</span>
+              </Link>
+            </div>
+          )}
         </div>
       </header>
 
@@ -48,35 +95,36 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               </div>
               <h2 className="text-lg font-bold">Regal Forms</h2>
             </div>
-            <p className="mt-4 text-sm text-black/60 dark:text-white/60">© 2024 Regal Forms Inc. All rights reserved.</p>
+            <p className="mt-4 text-sm text-black/60 dark:text-white/60">© 2025 Regal Forms, Regal Network Technologies. All rights reserved.</p>
           </div>
           <div>
             <h3 className="font-semibold">Product</h3>
             <ul className="mt-4 space-y-2 text-sm">
-              <li><a className="text-black/60 dark:text-white/60 hover:text-primary transition-colors" href="#">Features</a></li>
+              <li><Link className="text-black/60 dark:text-white/60 hover:text-primary transition-colors" to="/features">Features</Link></li>
+              <li><Link className="text-black/60 dark:text-white/60 hover:text-primary transition-colors" to="/templates">Templates</Link></li>
+              <li><Link className="text-black/60 dark:text-white/60 hover:text-primary transition-colors" to="/integrations">Integrations</Link></li>
             </ul>
           </div>
           <div>
             <h3 className="font-semibold">Company</h3>
             <ul className="mt-4 space-y-2 text-sm">
-              <li><a className="text-black/60 dark:text-white/60 hover:text-primary transition-colors" href="#">About Us</a></li>
-              <li><a className="text-black/60 dark:text-white/60 hover:text-primary transition-colors" href="#">Careers</a></li>
-              <li><a className="text-black/60 dark:text-white/60 hover:text-primary transition-colors" href="#">Contact</a></li>
+              <li><Link className="text-black/60 dark:text-white/60 hover:text-primary transition-colors" to="/careers">Careers</Link></li>
+              <li><Link className="text-black/60 dark:text-white/60 hover:text-primary transition-colors" to="/contact">Contact</Link></li>
             </ul>
           </div>
           <div>
-            <h3 className="font-semibold">Resources</h3>
+            <h3 className="font-semibold">Our Platforms</h3>
             <ul className="mt-4 space-y-2 text-sm">
-              <li><a className="text-black/60 dark:text-white/60 hover:text-primary transition-colors" href="#">Blog</a></li>
-              <li><a className="text-black/60 dark:text-white/60 hover:text-primary transition-colors" href="#">Help Center</a></li>
-              <li><a className="text-black/60 dark:text-white/60 hover:text-primary transition-colors" href="#">API Docs</a></li>
+              <li><a className="text-black/60 dark:text-white/60 hover:text-primary transition-colors" href="http://regalnetwork.online" target="_blank" rel="noopener noreferrer">Regal Network</a></li>
+              <li><a className="text-black/60 dark:text-white/60 hover:text-primary transition-colors" href="http://meet.regalnetwork.online" target="_blank" rel="noopener noreferrer">Regal Meet</a></li>
             </ul>
           </div>
           <div>
             <h3 className="font-semibold">Legal</h3>
             <ul className="mt-4 space-y-2 text-sm">
-              <li><a className="text-black/60 dark:text-white/60 hover:text-primary transition-colors" href="#">Privacy Policy</a></li>
-              <li><a className="text-black/60 dark:text-white/60 hover:text-primary transition-colors" href="#">Terms</a></li>
+              <li><Link className="text-black/60 dark:text-white/60 hover:text-primary transition-colors" to="/privacy">Privacy Policy</Link></li>
+              <li><Link className="text-black/60 dark:text-white/60 hover:text-primary transition-colors" to="/terms">Terms of Service</Link></li>
+              <li><Link className="text-black/60 dark:text-white/60 hover:text-primary transition-colors" to="/privacy">Cookies</Link></li>
             </ul>
           </div>
         </div>
