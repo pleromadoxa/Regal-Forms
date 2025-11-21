@@ -19,7 +19,7 @@ export interface FormTheme {
 export interface FormField {
   id: string;
   label: string;
-  type: 'text' | 'email' | 'number' | 'textarea' | 'select' | 'checkbox' | 'radio' | 'phone' | 'file' | 'image' | 'date' | 'time' | 'html' | 'quote' | 'youtube' | 'countdown' | 'url' | 'stripe' | 'paypal' | 'product' | 'rating' | 'slider' | 'signature';
+  type: 'text' | 'email' | 'number' | 'textarea' | 'select' | 'checkbox' | 'radio' | 'phone' | 'country' | 'file' | 'image' | 'date' | 'time' | 'html' | 'quote' | 'youtube' | 'countdown' | 'url' | 'stripe' | 'paypal' | 'product' | 'rating' | 'slider' | 'signature';
   placeholder?: string;
   helperText?: string;
   options?: string[];

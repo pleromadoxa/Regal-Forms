@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { GeneratedForm, FormTheme } from '../types';
+import { COUNTRIES, PHONE_CODES } from '../data/formResources';
 
 const DEMO_FORM: GeneratedForm = {
   title: "Product Demo Request",
@@ -17,13 +18,14 @@ const FormPreviewPage: React.FC = () => {
   const navigate = useNavigate();
   
   const form = (location.state?.formData as GeneratedForm) || DEMO_FORM;
-  const formId = location.state?.formId || 'demo-form';
+  const formId = location.state?.formId; // Allow null for unsaved drafts
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => { e.preventDefault(); setIsSubmitted(true); window.scrollTo(0,0); };
+  
+  // Always return the current form state to preserve draft in BuilderPage
   const handleReturn = () => { 
-      if(formId !== 'demo-form') navigate('/create', { state: { formData: form, formId } });
-      else navigate('/create');
+      navigate('/create', { state: { formData: form, formId } });
   };
 
   const theme: FormTheme = form?.theme || DEMO_FORM.theme!;
@@ -55,12 +57,12 @@ const FormPreviewPage: React.FC = () => {
            <h2 className="hidden text-lg font-bold sm:block">Preview Mode</h2>
         </div>
         <button onClick={handleReturn} className="rounded-lg bg-black text-white px-4 py-2 text-sm font-bold hover:bg-gray-800">
-          {formId === 'demo-form' ? 'Edit Demo' : 'Return to Editor'}
+          Return to Editor
         </button>
       </header>
 
-      <main className="flex flex-1 justify-center px-4 py-12">
-        <div className="w-full max-w-2xl custom-card shadow-xl overflow-hidden">
+      <main className="flex flex-1 justify-center px-4 py-12 overflow-y-auto">
+        <div className="w-full max-w-2xl custom-card shadow-xl overflow-hidden h-fit">
             {theme.coverImage && (
                 <div className="w-full h-48 bg-cover bg-center" style={{ backgroundImage: `url(${theme.coverImage})` }}></div>
             )}
@@ -82,21 +84,33 @@ const FormPreviewPage: React.FC = () => {
 
                         {form.fields.map(field => (
                             <div key={field.id} className="flex flex-col gap-2">
-                                <label className="font-bold text-sm opacity-90">{field.label}</label>
+                                <label className="font-bold text-sm opacity-90">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
+                                
                                 {['text','email','number','url'].includes(field.type) ? (
                                     <input type={field.type} className="custom-input w-full p-3 custom-focus" placeholder={field.placeholder} />
                                 ) : field.type === 'phone' ? (
                                     <div className="flex gap-2">
-                                        {field.showCountryCode && (
-                                             <select className="custom-input p-3 w-24 custom-focus">
-                                                 <option>+1</option>
-                                                 <option>+44</option>
-                                                 <option>+91</option>
-                                                 {/* Mock options */}
+                                        {field.showCountryCode !== false && (
+                                             <select className="custom-input p-3 w-28 custom-focus">
+                                                 {PHONE_CODES.map((c, i) => (
+                                                     <option key={i} value={c.code}>{c.country} {c.code}</option>
+                                                 ))}
                                              </select>
                                         )}
                                         <input type="tel" className="custom-input flex-1 p-3 custom-focus" placeholder={field.placeholder} />
                                     </div>
+                                ) : field.type === 'country' ? (
+                                    <select className="custom-input w-full p-3 custom-focus">
+                                        <option value="">Select Country</option>
+                                        {COUNTRIES.map((c) => (
+                                            <option key={c} value={c}>{c}</option>
+                                        ))}
+                                    </select>
+                                ) : field.type === 'select' ? (
+                                     <select className="custom-input w-full p-3 custom-focus">
+                                        <option value="">Select...</option>
+                                        {field.options?.map(o => <option key={o} value={o}>{o}</option>)}
+                                     </select>
                                 ) : field.type === 'textarea' ? (
                                     <textarea className="custom-input w-full p-3 custom-focus" rows={4} placeholder={field.placeholder} />
                                 ) : (

@@ -2,11 +2,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { generateFormSchema, generateOptionsForField, optimizeFieldLabel } from '../services/geminiService';
-import { FormField, GeneratedForm, GenerationStatus, FormTheme } from '../types';
+import { FormField, GeneratedForm, GenerationStatus, FormTheme, LogicRule } from '../types';
 import { collection, doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { COUNTRIES, PHONE_CODES } from '../data/formResources';
 
 const FIELD_TYPES = [
   { type: 'text', label: 'Short Text', icon: 'short_text' },
@@ -14,6 +15,7 @@ const FIELD_TYPES = [
   { type: 'email', label: 'Email', icon: 'mail' },
   { type: 'url', label: 'Website / URL', icon: 'link' },
   { type: 'phone', label: 'Phone', icon: 'call' },
+  { type: 'country', label: 'Country', icon: 'public' },
   { type: 'number', label: 'Number', icon: '123' },
   { type: 'date', label: 'Date', icon: 'calendar_today' },
   { type: 'time', label: 'Time', icon: 'schedule' },
@@ -75,66 +77,6 @@ const THEME_PRESETS: { name: string; theme: FormTheme }[] = [
         name: "Midnight Ruby",
         theme: { primaryColor: '#ef4444', backgroundColor: '#280505', textColor: '#fee2e2', fontFamily: 'serif', borderRadius: 'md' }
     },
-    {
-        name: "Mint Fresh",
-        theme: { primaryColor: '#059669', backgroundColor: '#ecfdf5', textColor: '#064e3b', fontFamily: 'sans', borderRadius: 'lg' }
-    },
-    {
-        name: "Golden Hour",
-        theme: { primaryColor: '#d97706', backgroundColor: '#fffbeb', textColor: '#451a03', fontFamily: 'serif', borderRadius: 'md' }
-    },
-    {
-        name: "Retro Pop",
-        theme: { primaryColor: '#db2777', backgroundColor: '#fffde7', textColor: '#000000', fontFamily: 'mono', borderRadius: 'none' }
-    },
-    {
-        name: "Deep Space",
-        theme: { primaryColor: '#38bdf8', backgroundColor: '#020617', textColor: '#f8fafc', fontFamily: 'sans', borderRadius: 'xl' }
-    },
-    {
-        name: "Coffee House",
-        theme: { primaryColor: '#78350f', backgroundColor: '#fff8f0', textColor: '#451a03', fontFamily: 'serif', borderRadius: 'sm' }
-    },
-    {
-        name: "Neon Nights",
-        theme: { primaryColor: '#f472b6', backgroundColor: '#1a1a2e', textColor: '#e94560', fontFamily: 'sans', borderRadius: 'xl' }
-    },
-    {
-        name: "Arctic Frost",
-        theme: { primaryColor: '#00b4d8', backgroundColor: '#caf0f8', textColor: '#03045e', fontFamily: 'sans', borderRadius: 'lg' }
-    },
-    {
-        name: "Volcanic Ash",
-        theme: { primaryColor: '#ef233c', backgroundColor: '#2b2d42', textColor: '#edf2f4', fontFamily: 'sans', borderRadius: 'none' }
-    },
-    {
-        name: "Pastel Party",
-        theme: { primaryColor: '#845ec2', backgroundColor: '#fbeaff', textColor: '#4b4453', fontFamily: 'sans', borderRadius: 'full' }
-    },
-    {
-        name: "Monochrome",
-        theme: { primaryColor: '#000000', backgroundColor: '#ffffff', textColor: '#000000', fontFamily: 'mono', borderRadius: 'none' }
-    },
-    {
-        name: "Nature Walk",
-        theme: { primaryColor: '#606c38', backgroundColor: '#fefae0', textColor: '#283618', fontFamily: 'serif', borderRadius: 'md' }
-    },
-    {
-        name: "Royal Gold",
-        theme: { primaryColor: '#ffd700', backgroundColor: '#240046', textColor: '#e0aaff', fontFamily: 'serif', borderRadius: 'xl' }
-    },
-    {
-        name: "Vintage Paper",
-        theme: { primaryColor: '#8d6e63', backgroundColor: '#f5f5dc', textColor: '#3e2723', fontFamily: 'serif', borderRadius: 'sm' }
-    },
-    {
-        name: "Tech Terminal",
-        theme: { primaryColor: '#00ff00', backgroundColor: '#000000', textColor: '#00ff00', fontFamily: 'mono', borderRadius: 'none' }
-    },
-    {
-        name: "Cherry Blossom",
-        theme: { primaryColor: '#ff69b4', backgroundColor: '#fff0f5', textColor: '#8b008b', fontFamily: 'sans', borderRadius: 'full' }
-    }
 ];
 
 const BuilderPage: React.FC = () => {
@@ -171,39 +113,14 @@ const BuilderPage: React.FC = () => {
 
   // Init from location state or localStorage
   useEffect(() => {
-      if (location.state) {
-          if (location.state.formData) {
-              setForm(location.state.formData);
-              if (location.state.formId) {
-                setFormId(location.state.formId);
-                setCustomSlug(location.state.formData.slug || location.state.formId);
-              }
-              if(location.state.formData.fields.length > 0) {
-                  setActiveTab('tools');
-              }
-          } else if (location.state.template) {
-              const template = location.state.template as GeneratedForm;
-              const freshFields = template.fields.map(f => ({
-                  ...f,
-                  id: `field_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-              }));
-              setForm({ 
-                ...template,
-                fields: freshFields,
-                theme: template.theme || THEME_PRESETS[0].theme,
-                collectEmails: template.collectEmails || false,
-                limitOneResponse: template.limitOneResponse || false,
-                restrictToOrg: template.restrictToOrg || false,
-                allowResponseEditing: template.allowResponseEditing || false,
-                showProgressBar: template.showProgressBar || false,
-                shuffleQuestions: template.shuffleQuestions || false,
-                collaborators: template.collaborators || [],
-                slug: '' 
-              });
+      if (location.state && location.state.formData) {
+          setForm(location.state.formData);
+          if (location.state.formId) {
+            setFormId(location.state.formId);
+            setCustomSlug(location.state.formData.slug || location.state.formId);
+          }
+          if(location.state.formData.fields.length > 0) {
               setActiveTab('tools');
-          } else if (location.state.title) { 
-               setForm(location.state as GeneratedForm);
-               setActiveTab('tools');
           }
       } else {
           // Fallback: Check localStorage for draft
@@ -219,15 +136,12 @@ const BuilderPage: React.FC = () => {
               } catch (e) {
                   console.error("Failed to load draft", e);
               }
-          }
-          
-          if (!form && !savedDraft) {
-             // If no draft and no state, create blank
-             // This might happen on direct refresh of /create
-             // We wait for user to click something or init via useEffect dependency
+          } else {
+              // Initialize blank form if absolutely no state found
+              initFormIfNeeded();
           }
       }
-  }, [location.state]);
+  }, []); // Run once on mount
 
   // Auto-save draft to localStorage
   useEffect(() => {
@@ -250,7 +164,6 @@ const BuilderPage: React.FC = () => {
 
   const applyPreset = (presetTheme: FormTheme) => {
       if (!form) return;
-      // Preserve user uploaded assets when switching presets
       setForm({ 
           ...form, 
           theme: { 
@@ -339,7 +252,7 @@ const BuilderPage: React.FC = () => {
         fields: [],
         submitButtonText: "Submit",
         successMessage: "Thank you for your submission!",
-        theme: THEME_PRESETS[0].theme, // Use Dark Night by default
+        theme: THEME_PRESETS[0].theme,
         collectEmails: false,
         limitOneResponse: false,
         restrictToOrg: false,
@@ -380,6 +293,40 @@ const BuilderPage: React.FC = () => {
     if (!form) return;
     setForm({ ...form, fields: form.fields.filter(f => f.id !== id) });
     if (selectedId === id) setSelectedId(null);
+  };
+
+  const addLogicRule = (fieldId: string) => {
+      if (!form) return;
+      const field = form.fields.find(f => f.id === fieldId);
+      if (!field) return;
+
+      const newRule: LogicRule = {
+          fieldId: form.fields.find(f => f.id !== fieldId)?.id || '', // Default to first other field
+          condition: 'equals',
+          value: '',
+          action: 'show'
+      };
+      
+      updateField(fieldId, { logic: [...(field.logic || []), newRule] });
+  };
+
+  const updateLogicRule = (fieldId: string, index: number, updates: Partial<LogicRule>) => {
+      if (!form) return;
+      const field = form.fields.find(f => f.id === fieldId);
+      if (!field || !field.logic) return;
+
+      const newLogic = [...field.logic];
+      newLogic[index] = { ...newLogic[index], ...updates };
+      updateField(fieldId, { logic: newLogic });
+  };
+
+  const removeLogicRule = (fieldId: string, index: number) => {
+      if (!form) return;
+      const field = form.fields.find(f => f.id === fieldId);
+      if (!field || !field.logic) return;
+
+      const newLogic = field.logic.filter((_, i) => i !== index);
+      updateField(fieldId, { logic: newLogic });
   };
 
   const clearAllFields = () => {
@@ -427,7 +374,6 @@ const BuilderPage: React.FC = () => {
           let targetId = formId || doc(collection(db, "forms")).id;
           const docRef = doc(db, "forms", targetId);
           let finalSlug = customSlug || (targetStatus === 'published' && slugStatus === 'taken' ? targetId : customSlug);
-          // If slug is empty, default to ID
           if (!finalSlug) finalSlug = targetId;
 
           const payload: any = {
@@ -451,7 +397,7 @@ const BuilderPage: React.FC = () => {
               setTimeout(() => setDraftSaved(false), 2000);
           } else {
               setShowShareModal(true);
-              localStorage.removeItem('builder_draft'); // Clear draft on publish
+              localStorage.removeItem('builder_draft'); 
           }
       } catch (e: any) {
           console.error(e);
@@ -605,72 +551,6 @@ const BuilderPage: React.FC = () => {
                               <input type="color" value={currentTheme.textColor} onChange={(e) => updateTheme({ textColor: e.target.value })} className="bg-transparent border-none outline-none size-8 cursor-pointer" />
                           </div>
                       </div>
-
-                      <div className="space-y-4">
-                          <h3 className="font-bold mb-3 text-sm uppercase tracking-wider text-black/50 dark:text-white/50">Typography</h3>
-                          <div className="flex bg-black/5 dark:bg-white/5 p-1 rounded-lg">
-                              {['sans', 'serif', 'mono'].map((font) => (
-                                  <button
-                                      key={font}
-                                      onClick={() => updateTheme({ fontFamily: font as any })}
-                                      className={`flex-1 py-1.5 text-xs font-bold rounded capitalize ${currentTheme.fontFamily === font ? 'bg-white dark:bg-white/10 shadow-sm text-primary' : 'opacity-60'}`}
-                                  >
-                                      {font}
-                                  </button>
-                              ))}
-                          </div>
-                      </div>
-
-                      <div className="space-y-4">
-                          <h3 className="font-bold mb-3 text-sm uppercase tracking-wider text-black/50 dark:text-white/50">Radius</h3>
-                          <div className="flex flex-wrap gap-1 bg-black/5 dark:bg-white/5 p-1 rounded-lg">
-                              {['none', 'sm', 'md', 'lg', 'xl', 'full'].map((r) => (
-                                  <button
-                                      key={r}
-                                      onClick={() => updateTheme({ borderRadius: r as any })}
-                                      className={`flex-1 min-w-[40px] py-1.5 text-xs font-bold rounded capitalize ${currentTheme.borderRadius === r ? 'bg-white dark:bg-white/10 shadow-sm text-primary' : 'opacity-60'}`}
-                                  >
-                                      {r}
-                                  </button>
-                              ))}
-                          </div>
-                      </div>
-
-                      <div className="space-y-4">
-                          <h3 className="font-bold mb-3 text-sm uppercase tracking-wider text-black/50 dark:text-white/50">Branding</h3>
-                          
-                          <div className="p-3 rounded-lg border border-dashed border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-center relative group">
-                              <input type="file" ref={logoInputRef} className="hidden" accept="image/*" onChange={(e) => handleAssetUpload(e, 'logo')} />
-                              {currentTheme.logo ? (
-                                  <div className="relative">
-                                      <img src={currentTheme.logo} alt="Logo" className="h-10 mx-auto object-contain" />
-                                      <button onClick={() => updateTheme({ logo: undefined })} className="absolute -top-2 -right-2 size-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:scale-110 transition-transform"><span className="material-symbols-outlined text-xs">close</span></button>
-                                  </div>
-                              ) : (
-                                  <div onClick={() => logoInputRef.current?.click()} className="cursor-pointer flex flex-col items-center gap-1 py-2">
-                                      <span className="material-symbols-outlined text-primary">add_photo_alternate</span>
-                                      <span className="text-xs font-bold opacity-70">Upload Logo</span>
-                                  </div>
-                              )}
-                              {uploadingAsset === 'logo' && <div className="absolute inset-0 bg-white/80 flex items-center justify-center"><span className="material-symbols-outlined animate-spin text-primary">refresh</span></div>}
-                          </div>
-
-                          <div className="p-3 rounded-lg border border-dashed border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-center relative group">
-                              <input type="file" ref={coverInputRef} className="hidden" accept="image/*" onChange={(e) => handleAssetUpload(e, 'cover')} />
-                              {currentTheme.coverImage ? (
-                                  <div className="relative">
-                                      <img src={currentTheme.coverImage} alt="Cover" className="h-20 w-full object-cover rounded" />
-                                      <button onClick={() => updateTheme({ coverImage: undefined })} className="absolute -top-2 -right-2 size-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:scale-110 transition-transform"><span className="material-symbols-outlined text-xs">close</span></button>
-                                  </div>
-                              ) : (
-                                  <div onClick={() => coverInputRef.current?.click()} className="cursor-pointer flex flex-col items-center gap-1 py-2">
-                                      <span className="material-symbols-outlined text-primary">image</span>
-                                      <span className="text-xs font-bold opacity-70">Upload Cover Image</span>
-                                  </div>
-                              )}
-                              {uploadingAsset === 'cover' && <div className="absolute inset-0 bg-white/80 flex items-center justify-center"><span className="material-symbols-outlined animate-spin text-primary">refresh</span></div>}
-                          </div>
-                      </div>
                   </div>
               )}
           </aside>
@@ -683,7 +563,7 @@ const BuilderPage: React.FC = () => {
             onDrop={handleDrop}
           >
               <div 
-                  className={`w-full max-w-2xl transition-all duration-300 ${isDraggingOver ? 'scale-[1.02] ring-4 ring-primary/20' : ''}`}
+                  className={`w-full max-w-2xl transition-all duration-300 h-fit min-h-[calc(100vh-100px)] ${isDraggingOver ? 'scale-[1.02] ring-4 ring-primary/20' : ''}`}
                   style={{
                       backgroundColor: currentTheme.backgroundColor,
                       color: currentTheme.textColor,
@@ -695,7 +575,7 @@ const BuilderPage: React.FC = () => {
                       <div className="w-full h-48 bg-cover bg-center rounded-t-[inherit]" style={{ backgroundImage: `url(${currentTheme.coverImage})` }}></div>
                   )}
 
-                  <div className="p-8 md:p-12 min-h-[600px] flex flex-col gap-6 shadow-xl relative">
+                  <div className="p-8 md:p-12 flex flex-col gap-6 shadow-xl relative">
                       {currentTheme.logo && <img src={currentTheme.logo} alt="Logo" className="h-16 mb-4 object-contain mx-auto" />}
 
                       {/* Title Block */}
@@ -730,13 +610,27 @@ const BuilderPage: React.FC = () => {
                               
                               {/* Field Previews */}
                               <div className="pointer-events-none opacity-60">
-                                  {['text', 'email', 'number', 'url'].includes(field.type) && <div className="h-10 w-full border border-current rounded opacity-30 bg-black/5"></div>}
+                                  {['text', 'email', 'number', 'url'].includes(field.type) && <div className="h-10 w-full border border-current rounded opacity-30 bg-black/5 px-2 flex items-center text-sm">{field.placeholder}</div>}
+                                  
                                   {field.type === 'phone' && (
                                       <div className="h-10 w-full border border-current rounded opacity-30 bg-black/5 flex items-center px-3 gap-2">
-                                          {field.showCountryCode && <span className="text-xs border-r border-current pr-2 opacity-50">+1</span>}
-                                          <span>{field.placeholder || ''}</span>
+                                          {field.showCountryCode && (
+                                              <div className="flex items-center gap-1 border-r border-current pr-2 mr-2">
+                                                  <span className="text-xs">US +1</span>
+                                                  <span className="material-symbols-outlined text-xs">arrow_drop_down</span>
+                                              </div>
+                                          )}
+                                          <span>{field.placeholder || '123-456-7890'}</span>
                                       </div>
                                   )}
+                                  
+                                  {field.type === 'country' && (
+                                      <div className="h-10 w-full border border-current rounded opacity-30 bg-black/5 flex items-center justify-between px-3">
+                                          <span className="text-sm">Select Country...</span>
+                                          <span className="material-symbols-outlined text-sm">arrow_drop_down</span>
+                                      </div>
+                                  )}
+
                                   {field.type === 'textarea' && <div className="h-24 w-full border border-current rounded opacity-30 bg-black/5"></div>}
                                   {field.type === 'select' && <div className="h-10 w-full border border-current rounded opacity-30 bg-black/5 flex items-center justify-between px-3"><span className="text-xs">Dropdown</span><span className="material-symbols-outlined text-sm">arrow_drop_down</span></div>}
                                   {['radio', 'checkbox'].includes(field.type) && (
@@ -769,7 +663,7 @@ const BuilderPage: React.FC = () => {
 
           {/* Right Properties Panel */}
           {selectedId && (
-              <aside className="w-[300px] bg-white dark:bg-[#1e1e1e] border-l border-black/10 dark:border-white/10 flex flex-col overflow-y-auto shrink-0 z-10 animate-slide-in">
+              <aside className="w-[320px] bg-white dark:bg-[#1e1e1e] border-l border-black/10 dark:border-white/10 flex flex-col overflow-y-auto shrink-0 z-10 animate-slide-in">
                   <div className="p-4 border-b border-black/10 dark:border-white/10 flex justify-between items-center bg-black/5 dark:bg-white/5">
                       <h3 className="font-bold text-sm uppercase tracking-wider">Properties</h3>
                       <button onClick={() => setSelectedId(null)}><span className="material-symbols-outlined text-lg">close</span></button>
@@ -795,6 +689,7 @@ const BuilderPage: React.FC = () => {
                       </div>
                   ) : selectedField ? (
                       <div className="p-4 flex flex-col gap-6">
+                           {/* Basic Properties */}
                            <div className="flex flex-col gap-2">
                                <label className="text-xs font-bold uppercase opacity-50">Label</label>
                                <div className="flex gap-2">
@@ -808,7 +703,8 @@ const BuilderPage: React.FC = () => {
                                <input type="checkbox" checked={selectedField.required} onChange={(e) => updateField(selectedField.id, { required: e.target.checked })} className="accent-primary size-4" />
                            </div>
 
-                           {['text', 'textarea', 'email', 'number', 'phone', 'url'].includes(selectedField.type) && (
+                           {/* Common Text Fields Options */}
+                           {['text', 'textarea', 'email', 'number', 'phone', 'url', 'country'].includes(selectedField.type) && (
                                <div className="flex flex-col gap-4">
                                    <div className="flex flex-col gap-2">
                                        <label className="text-xs font-bold uppercase opacity-50">Placeholder</label>
@@ -821,13 +717,15 @@ const BuilderPage: React.FC = () => {
                                </div>
                            )}
                            
+                           {/* Phone Specific */}
                            {selectedField.type === 'phone' && (
-                               <div className="flex items-center justify-between">
+                               <div className="flex items-center justify-between p-2 bg-black/5 dark:bg-white/5 rounded">
                                    <label className="text-xs font-bold uppercase opacity-50">Show Country Code</label>
-                                   <input type="checkbox" checked={selectedField.showCountryCode || false} onChange={(e) => updateField(selectedField.id, { showCountryCode: e.target.checked })} className="accent-primary size-4" />
+                                   <input type="checkbox" checked={selectedField.showCountryCode !== false} onChange={(e) => updateField(selectedField.id, { showCountryCode: e.target.checked })} className="accent-primary size-4" />
                                </div>
                            )}
 
+                           {/* Options Logic for Dropdowns */}
                            {['select', 'radio', 'checkbox'].includes(selectedField.type) && (
                                <div className="flex flex-col gap-3">
                                    <div className="flex justify-between items-center">
@@ -852,6 +750,70 @@ const BuilderPage: React.FC = () => {
                                    </div>
                                </div>
                            )}
+
+                           {/* Conditional Logic Editor */}
+                           <div className="border-t border-black/10 dark:border-white/10 pt-4 mt-2">
+                               <div className="flex justify-between items-center mb-2">
+                                   <label className="text-xs font-bold uppercase opacity-50">Conditional Logic</label>
+                                   <button onClick={() => addLogicRule(selectedField.id)} className="text-xs font-bold text-primary hover:underline flex items-center gap-1"><span className="material-symbols-outlined text-sm">add_circle</span> Add Rule</button>
+                               </div>
+                               
+                               {!selectedField.logic || selectedField.logic.length === 0 ? (
+                                   <p className="text-xs text-black/40 dark:text-white/40 italic">No rules. Field is always visible.</p>
+                               ) : (
+                                   <div className="flex flex-col gap-3">
+                                       {selectedField.logic.map((rule, idx) => (
+                                           <div key={idx} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-xs flex flex-col gap-2 relative group">
+                                                <button onClick={() => removeLogicRule(selectedField.id, idx)} className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 text-red-500"><span className="material-symbols-outlined text-sm">close</span></button>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-bold opacity-70 w-10">IF</span>
+                                                    <select 
+                                                        className="flex-1 p-1 rounded border border-black/10 dark:border-white/10 bg-transparent"
+                                                        value={rule.fieldId}
+                                                        onChange={(e) => updateLogicRule(selectedField.id, idx, { fieldId: e.target.value })}
+                                                    >
+                                                        {form?.fields.filter(f => f.id !== selectedField.id).map(f => (
+                                                            <option key={f.id} value={f.id}>{f.label.substring(0, 20)}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-bold opacity-70 w-10">IS</span>
+                                                    <select 
+                                                        className="flex-1 p-1 rounded border border-black/10 dark:border-white/10 bg-transparent"
+                                                        value={rule.condition}
+                                                        onChange={(e) => updateLogicRule(selectedField.id, idx, { condition: e.target.value as any })}
+                                                    >
+                                                        <option value="equals">Equal To</option>
+                                                        <option value="not_equals">Not Equal To</option>
+                                                        <option value="contains">Contains</option>
+                                                    </select>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-bold opacity-70 w-10">VAL</span>
+                                                    <input 
+                                                        className="flex-1 p-1 rounded border border-black/10 dark:border-white/10 bg-transparent"
+                                                        placeholder="Value..."
+                                                        value={rule.value}
+                                                        onChange={(e) => updateLogicRule(selectedField.id, idx, { value: e.target.value })}
+                                                    />
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-bold opacity-70 w-10">THEN</span>
+                                                    <select 
+                                                        className="flex-1 p-1 rounded border border-black/10 dark:border-white/10 bg-transparent font-bold text-primary"
+                                                        value={rule.action}
+                                                        onChange={(e) => updateLogicRule(selectedField.id, idx, { action: e.target.value as any })}
+                                                    >
+                                                        <option value="show">Show This Field</option>
+                                                        <option value="hide">Hide This Field</option>
+                                                    </select>
+                                                </div>
+                                           </div>
+                                       ))}
+                                   </div>
+                               )}
+                           </div>
                       </div>
                   ) : null}
               </aside>
