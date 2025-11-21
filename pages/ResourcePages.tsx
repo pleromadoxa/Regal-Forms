@@ -417,6 +417,9 @@ export const HelpCenterPage: React.FC = () => {
   const [currentCategory, setCurrentCategory] = useState<string | null>(null);
   const [currentArticle, setCurrentArticle] = useState<Article | null>(null);
 
+  // Add state for feedback interaction
+  const [feedbackGiven, setFeedbackGiven] = useState<string | null>(null);
+
   const categories = Object.keys(HELP_ARTICLES);
 
   const handleCategoryClick = (cat: string) => {
@@ -428,6 +431,7 @@ export const HelpCenterPage: React.FC = () => {
 
   const handleArticleClick = (article: Article) => {
       setCurrentArticle(article);
+      setFeedbackGiven(null); // Reset feedback when opening new article
       window.scrollTo(0, 0);
   };
 
@@ -513,7 +517,7 @@ export const HelpCenterPage: React.FC = () => {
                             </div>
                             <h3 className="font-bold text-xl group-hover:text-secondary transition-colors mb-2">{cat}</h3>
                             <p className="text-sm text-black/60 dark:text-white/60 leading-relaxed">
-                                {HELP_ARTICLES[cat].length} articles available
+                                {HELP_ARTICLES[cat]?.length || 0} articles available
                             </p>
                         </div>
                     ))}
@@ -565,7 +569,7 @@ export const HelpCenterPage: React.FC = () => {
                   <h2 className="text-3xl font-black mb-8">{currentCategory}</h2>
                   <div className="grid gap-4">
                       {HELP_ARTICLES[currentCategory]
-                        .filter(a => a.title.toLowerCase().includes(searchQuery.toLowerCase()))
+                        ?.filter(a => a.title.toLowerCase().includes(searchQuery.toLowerCase()))
                         .map((article) => (
                           <div 
                               key={article.id} 
@@ -581,7 +585,7 @@ export const HelpCenterPage: React.FC = () => {
                               <span className="material-symbols-outlined text-black/20 dark:text-white/20 group-hover:translate-x-1 transition-transform">arrow_forward_ios</span>
                           </div>
                       ))}
-                      {HELP_ARTICLES[currentCategory].length === 0 && (
+                      {(HELP_ARTICLES[currentCategory]?.length || 0) === 0 && (
                           <p className="text-center opacity-50 py-10">No articles found matching your search.</p>
                       )}
                   </div>
@@ -599,14 +603,28 @@ export const HelpCenterPage: React.FC = () => {
                       
                       <div className="mt-12 pt-8 border-t border-black/10 dark:border-white/10 flex flex-col sm:flex-row justify-between items-center gap-4">
                           <p className="text-sm opacity-60 font-medium">Was this article helpful?</p>
-                          <div className="flex gap-3">
-                              <button className="px-4 py-2 rounded-lg border border-black/10 dark:border-white/10 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-600 hover:border-green-200 text-sm font-bold transition-colors flex items-center gap-2">
-                                  <span className="material-symbols-outlined text-lg">thumb_up</span> Yes
-                              </button>
-                              <button className="px-4 py-2 rounded-lg border border-black/10 dark:border-white/10 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 hover:border-red-200 text-sm font-bold transition-colors flex items-center gap-2">
-                                  <span className="material-symbols-outlined text-lg">thumb_down</span> No
-                              </button>
-                          </div>
+                          
+                          {feedbackGiven ? (
+                              <div className="text-sm font-bold text-green-500 animate-fade-in flex items-center gap-2">
+                                  <span className="material-symbols-outlined">check_circle</span>
+                                  {feedbackGiven === 'yes' ? 'Thanks for your feedback!' : 'Thanks! We will improve this.'}
+                              </div>
+                          ) : (
+                              <div className="flex gap-3">
+                                  <button 
+                                    onClick={() => setFeedbackGiven('yes')} 
+                                    className="px-4 py-2 rounded-lg border border-black/10 dark:border-white/10 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-600 hover:border-green-200 text-sm font-bold transition-colors flex items-center gap-2"
+                                  >
+                                      <span className="material-symbols-outlined text-lg">thumb_up</span> Yes
+                                  </button>
+                                  <button 
+                                    onClick={() => setFeedbackGiven('no')} 
+                                    className="px-4 py-2 rounded-lg border border-black/10 dark:border-white/10 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 hover:border-red-200 text-sm font-bold transition-colors flex items-center gap-2"
+                                  >
+                                      <span className="material-symbols-outlined text-lg">thumb_down</span> No
+                                  </button>
+                              </div>
+                          )}
                       </div>
                   </div>
               </div>
@@ -619,7 +637,7 @@ export const HelpCenterPage: React.FC = () => {
   );
 };
 
-// --- API Docs Page ---
+// --- ApiDocsPage remains same ---
 export const ApiDocsPage: React.FC = () => {
   return (
     <div className="w-full flex h-[calc(100vh-80px)] overflow-hidden">

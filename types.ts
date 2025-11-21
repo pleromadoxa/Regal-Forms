@@ -6,6 +6,16 @@ export interface LogicRule {
   action: 'show' | 'hide';
 }
 
+export interface FormTheme {
+  primaryColor: string;
+  backgroundColor: string;
+  textColor: string;
+  fontFamily: 'sans' | 'serif' | 'mono';
+  borderRadius: 'none' | 'sm' | 'md' | 'lg' | 'full';
+  logo?: string;
+  coverImage?: string;
+}
+
 export interface FormField {
   id: string;
   label: string;
@@ -57,6 +67,9 @@ export interface GeneratedForm {
   successMessage?: string;
   slug?: string; // Custom URL slug
   
+  // Design & Branding
+  theme?: FormTheme;
+
   // Settings
   collectEmails?: boolean;
   limitOneResponse?: boolean;
