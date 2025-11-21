@@ -61,7 +61,7 @@ const FormPublicPage: React.FC = () => {
   };
 
   const fontClass = { 'sans': 'font-sans', 'serif': 'font-serif', 'mono': 'font-mono' }[theme.fontFamily];
-  const radiusMap: any = { 'none': '0px', 'sm': '4px', 'md': '8px', 'lg': '12px', 'full': '24px' };
+  const radiusMap: any = { 'none': '0px', 'sm': '4px', 'md': '8px', 'lg': '12px', 'xl': '16px', 'full': '24px' };
   const radius = radiusMap[theme.borderRadius];
 
   const customStyles = {

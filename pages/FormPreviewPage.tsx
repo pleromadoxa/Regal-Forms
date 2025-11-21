@@ -28,7 +28,7 @@ const FormPreviewPage: React.FC = () => {
 
   const theme: FormTheme = form?.theme || DEMO_FORM.theme!;
   const fontClass = { 'sans': 'font-sans', 'serif': 'font-serif', 'mono': 'font-mono' }[theme.fontFamily];
-  const radiusMap: any = { 'none': '0px', 'sm': '4px', 'md': '8px', 'lg': '12px', 'full': '24px' };
+  const radiusMap: any = { 'none': '0px', 'sm': '4px', 'md': '8px', 'lg': '12px', 'xl': '16px', 'full': '24px' };
   const radius = radiusMap[theme.borderRadius];
 
   const customStyles = {
@@ -83,11 +83,26 @@ const FormPreviewPage: React.FC = () => {
                         {form.fields.map(field => (
                             <div key={field.id} className="flex flex-col gap-2">
                                 <label className="font-bold text-sm opacity-90">{field.label}</label>
-                                {['text','email'].includes(field.type) ? (
-                                    <input type={field.type} className="custom-input w-full p-3 custom-focus" />
+                                {['text','email','number','url'].includes(field.type) ? (
+                                    <input type={field.type} className="custom-input w-full p-3 custom-focus" placeholder={field.placeholder} />
+                                ) : field.type === 'phone' ? (
+                                    <div className="flex gap-2">
+                                        {field.showCountryCode && (
+                                             <select className="custom-input p-3 w-24 custom-focus">
+                                                 <option>+1</option>
+                                                 <option>+44</option>
+                                                 <option>+91</option>
+                                                 {/* Mock options */}
+                                             </select>
+                                        )}
+                                        <input type="tel" className="custom-input flex-1 p-3 custom-focus" placeholder={field.placeholder} />
+                                    </div>
+                                ) : field.type === 'textarea' ? (
+                                    <textarea className="custom-input w-full p-3 custom-focus" rows={4} placeholder={field.placeholder} />
                                 ) : (
-                                    <div className="p-3 border border-dashed opacity-50 rounded text-sm" style={{ borderColor: theme.textColor }}>Input Preview</div>
+                                    <div className="p-3 border border-dashed opacity-50 rounded text-sm" style={{ borderColor: theme.textColor }}>Input Preview ({field.type})</div>
                                 )}
+                                {field.helperText && <p className="text-xs opacity-60">{field.helperText}</p>}
                             </div>
                         ))}
 

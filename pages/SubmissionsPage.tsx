@@ -172,7 +172,8 @@ const SubmissionsPage: React.FC = () => {
 
   const handleShare = () => {
       if (!selectedForm) return;
-      const url = `${window.location.origin}/#/form/${selectedForm.slug || selectedForm.id}`;
+      // Use the explicit domain as requested by the user
+      const url = `https://www.regalforms.xyz/#/form/${selectedForm.slug || selectedForm.id}`;
       navigator.clipboard.writeText(url).then(() => {
           alert("Link copied to clipboard!");
       }).catch(err => {

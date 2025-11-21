@@ -36,6 +36,10 @@ const FIELD_TYPES = [
 
 const THEME_PRESETS: { name: string; theme: FormTheme }[] = [
     { 
+        name: "Dark Night", 
+        theme: { primaryColor: '#8b5cf6', backgroundColor: '#18181b', textColor: '#ffffff', fontFamily: 'sans', borderRadius: 'lg' } 
+    },
+    { 
         name: "Regal Default", 
         theme: { primaryColor: '#f27f0d', backgroundColor: '#ffffff', textColor: '#18181b', fontFamily: 'sans', borderRadius: 'lg' } 
     },
@@ -44,16 +48,92 @@ const THEME_PRESETS: { name: string; theme: FormTheme }[] = [
         theme: { primaryColor: '#0ea5e9', backgroundColor: '#f0f9ff', textColor: '#0f172a', fontFamily: 'sans', borderRadius: 'md' } 
     },
     { 
-        name: "Dark Night", 
-        theme: { primaryColor: '#8b5cf6', backgroundColor: '#18181b', textColor: '#ffffff', fontFamily: 'sans', borderRadius: 'lg' } 
-    },
-    { 
         name: "Elegant Serif", 
         theme: { primaryColor: '#be185d', backgroundColor: '#fff1f2', textColor: '#4c0519', fontFamily: 'serif', borderRadius: 'sm' } 
     },
     { 
         name: "Forest Green", 
         theme: { primaryColor: '#15803d', backgroundColor: '#f0fdf4', textColor: '#14532d', fontFamily: 'mono', borderRadius: 'none' } 
+    },
+    {
+        name: "Cyberpunk",
+        theme: { primaryColor: '#00ff9d', backgroundColor: '#0a0a0a', textColor: '#e0e0e0', fontFamily: 'mono', borderRadius: 'none' }
+    },
+    {
+        name: "Sunset Vibes",
+        theme: { primaryColor: '#f43f5e', backgroundColor: '#fff7ed', textColor: '#431407', fontFamily: 'sans', borderRadius: 'xl' }
+    },
+    {
+        name: "Lavender Dream",
+        theme: { primaryColor: '#a855f7', backgroundColor: '#faf5ff', textColor: '#3b0764', fontFamily: 'sans', borderRadius: 'full' }
+    },
+    {
+        name: "Slate Corporate",
+        theme: { primaryColor: '#334155', backgroundColor: '#f8fafc', textColor: '#0f172a', fontFamily: 'sans', borderRadius: 'sm' }
+    },
+    {
+        name: "Midnight Ruby",
+        theme: { primaryColor: '#ef4444', backgroundColor: '#280505', textColor: '#fee2e2', fontFamily: 'serif', borderRadius: 'md' }
+    },
+    {
+        name: "Mint Fresh",
+        theme: { primaryColor: '#059669', backgroundColor: '#ecfdf5', textColor: '#064e3b', fontFamily: 'sans', borderRadius: 'lg' }
+    },
+    {
+        name: "Golden Hour",
+        theme: { primaryColor: '#d97706', backgroundColor: '#fffbeb', textColor: '#451a03', fontFamily: 'serif', borderRadius: 'md' }
+    },
+    {
+        name: "Retro Pop",
+        theme: { primaryColor: '#db2777', backgroundColor: '#fffde7', textColor: '#000000', fontFamily: 'mono', borderRadius: 'none' }
+    },
+    {
+        name: "Deep Space",
+        theme: { primaryColor: '#38bdf8', backgroundColor: '#020617', textColor: '#f8fafc', fontFamily: 'sans', borderRadius: 'xl' }
+    },
+    {
+        name: "Coffee House",
+        theme: { primaryColor: '#78350f', backgroundColor: '#fff8f0', textColor: '#451a03', fontFamily: 'serif', borderRadius: 'sm' }
+    },
+    {
+        name: "Neon Nights",
+        theme: { primaryColor: '#f472b6', backgroundColor: '#1a1a2e', textColor: '#e94560', fontFamily: 'sans', borderRadius: 'xl' }
+    },
+    {
+        name: "Arctic Frost",
+        theme: { primaryColor: '#00b4d8', backgroundColor: '#caf0f8', textColor: '#03045e', fontFamily: 'sans', borderRadius: 'lg' }
+    },
+    {
+        name: "Volcanic Ash",
+        theme: { primaryColor: '#ef233c', backgroundColor: '#2b2d42', textColor: '#edf2f4', fontFamily: 'sans', borderRadius: 'none' }
+    },
+    {
+        name: "Pastel Party",
+        theme: { primaryColor: '#845ec2', backgroundColor: '#fbeaff', textColor: '#4b4453', fontFamily: 'sans', borderRadius: 'full' }
+    },
+    {
+        name: "Monochrome",
+        theme: { primaryColor: '#000000', backgroundColor: '#ffffff', textColor: '#000000', fontFamily: 'mono', borderRadius: 'none' }
+    },
+    {
+        name: "Nature Walk",
+        theme: { primaryColor: '#606c38', backgroundColor: '#fefae0', textColor: '#283618', fontFamily: 'serif', borderRadius: 'md' }
+    },
+    {
+        name: "Royal Gold",
+        theme: { primaryColor: '#ffd700', backgroundColor: '#240046', textColor: '#e0aaff', fontFamily: 'serif', borderRadius: 'xl' }
+    },
+    {
+        name: "Vintage Paper",
+        theme: { primaryColor: '#8d6e63', backgroundColor: '#f5f5dc', textColor: '#3e2723', fontFamily: 'serif', borderRadius: 'sm' }
+    },
+    {
+        name: "Tech Terminal",
+        theme: { primaryColor: '#00ff00', backgroundColor: '#000000', textColor: '#00ff00', fontFamily: 'mono', borderRadius: 'none' }
+    },
+    {
+        name: "Cherry Blossom",
+        theme: { primaryColor: '#ff69b4', backgroundColor: '#fff0f5', textColor: '#8b008b', fontFamily: 'sans', borderRadius: 'full' }
     }
 ];
 
@@ -86,6 +166,10 @@ const BuilderPage: React.FC = () => {
   const logoInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
+  // Derived URL for sharing with the live domain
+  const shareUrl = `https://www.regalforms.xyz/#/form/${customSlug || formId}`;
+
+  // Init from location state or localStorage
   useEffect(() => {
       if (location.state) {
           if (location.state.formData) {
@@ -121,8 +205,36 @@ const BuilderPage: React.FC = () => {
                setForm(location.state as GeneratedForm);
                setActiveTab('tools');
           }
+      } else {
+          // Fallback: Check localStorage for draft
+          const savedDraft = localStorage.getItem('builder_draft');
+          if (savedDraft) {
+              try {
+                  const { form: savedForm, formId: savedId } = JSON.parse(savedDraft);
+                  if (savedForm) {
+                      setForm(savedForm);
+                      setFormId(savedId);
+                      if (savedForm.fields.length > 0) setActiveTab('tools');
+                  }
+              } catch (e) {
+                  console.error("Failed to load draft", e);
+              }
+          }
+          
+          if (!form && !savedDraft) {
+             // If no draft and no state, create blank
+             // This might happen on direct refresh of /create
+             // We wait for user to click something or init via useEffect dependency
+          }
       }
   }, [location.state]);
+
+  // Auto-save draft to localStorage
+  useEffect(() => {
+      if (form) {
+          localStorage.setItem('builder_draft', JSON.stringify({ form, formId }));
+      }
+  }, [form, formId]);
 
   const selectedField = form?.fields.find(f => f.id === selectedId) || null;
   const isFormSettingsSelected = selectedId === 'form-settings';
@@ -138,11 +250,40 @@ const BuilderPage: React.FC = () => {
 
   const applyPreset = (presetTheme: FormTheme) => {
       if (!form) return;
-      setForm({ ...form, theme: { ...presetTheme, logo: form.theme?.logo, coverImage: form.theme?.coverImage } });
+      // Preserve user uploaded assets when switching presets
+      setForm({ 
+          ...form, 
+          theme: { 
+              ...presetTheme, 
+              logo: form.theme?.logo, 
+              coverImage: form.theme?.coverImage 
+          } 
+      });
+  };
+
+  const handleAssetUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'cover') => {
+      if (!e.target.files || !e.target.files[0] || !currentUser || !form) return;
+      const file = e.target.files[0];
+      if (file.size > 2 * 1024 * 1024) { alert("File size must be less than 2MB"); return; }
+      
+      setUploadingAsset(type);
+      try {
+          const storageRef = ref(storage, `form_assets/${currentUser.uid}/${Date.now()}_${file.name}`);
+          const snapshot = await uploadBytesResumable(storageRef, file);
+          const url = await getDownloadURL(snapshot.ref);
+          
+          if (type === 'logo') updateTheme({ logo: url });
+          else updateTheme({ coverImage: url });
+      } catch (error) {
+          console.error(error);
+          alert("Upload failed");
+      } finally {
+          setUploadingAsset(null);
+      }
   };
 
   const getBorderRadiusPx = (size: string) => {
-      const map: any = { 'none': '0px', 'sm': '4px', 'md': '8px', 'lg': '12px', 'full': '24px' };
+      const map: any = { 'none': '0px', 'sm': '4px', 'md': '8px', 'lg': '12px', 'xl': '16px', 'full': '24px' };
       return map[size] || '8px';
   };
 
@@ -198,7 +339,7 @@ const BuilderPage: React.FC = () => {
         fields: [],
         submitButtonText: "Submit",
         successMessage: "Thank you for your submission!",
-        theme: THEME_PRESETS[0].theme,
+        theme: THEME_PRESETS[0].theme, // Use Dark Night by default
         collectEmails: false,
         limitOneResponse: false,
         restrictToOrg: false,
@@ -286,9 +427,10 @@ const BuilderPage: React.FC = () => {
           let targetId = formId || doc(collection(db, "forms")).id;
           const docRef = doc(db, "forms", targetId);
           let finalSlug = customSlug || (targetStatus === 'published' && slugStatus === 'taken' ? targetId : customSlug);
+          // If slug is empty, default to ID
           if (!finalSlug) finalSlug = targetId;
 
-          const payload = {
+          const payload: any = {
               ...form,
               slug: finalSlug,
               status: targetStatus,
@@ -309,6 +451,7 @@ const BuilderPage: React.FC = () => {
               setTimeout(() => setDraftSaved(false), 2000);
           } else {
               setShowShareModal(true);
+              localStorage.removeItem('builder_draft'); // Clear draft on publish
           }
       } catch (e: any) {
           console.error(e);
@@ -318,458 +461,448 @@ const BuilderPage: React.FC = () => {
       }
   };
 
-  const handleAssetUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'cover') => {
-      if (e.target.files && e.target.files[0]) {
-          const file = e.target.files[0];
-          let currentFormId = formId;
-          if (!currentFormId) {
-              currentFormId = doc(collection(db, "forms")).id;
-              setFormId(currentFormId);
-          }
-
-          setUploadingAsset(type);
-          try {
-              const storageRef = ref(storage, `form_assets/${currentFormId}/${type}_${Date.now()}`);
-              const uploadTask = await uploadBytesResumable(storageRef, file);
-              const downloadURL = await getDownloadURL(uploadTask.ref);
-              updateTheme({ [type === 'logo' ? 'logo' : 'coverImage']: downloadURL });
-          } catch (err) {
-              console.error("Upload failed", err);
-              alert("Failed to upload image.");
-          } finally {
-              setUploadingAsset(null);
-          }
-      }
-  };
-
   return (
-    <div className="flex-1 w-full max-w-[1600px] mx-auto px-4 py-6 flex flex-col lg:flex-row gap-6 h-[calc(100vh-80px)]">
-      
-      {/* Sidebar */}
-      <div className="w-full lg:w-80 flex flex-col gap-4 shrink-0">
-        
-        {selectedField ? (
-            <div className="flex-1 bg-white dark:bg-background-dark p-5 rounded-xl border border-black/10 dark:border-white/10 shadow-sm overflow-y-auto flex flex-col gap-5">
-                <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3">
-                    <h3 className="font-bold flex items-center gap-2">
-                        <span className="material-symbols-outlined text-primary">tune</span>
-                        Field Settings
-                    </h3>
-                    <button onClick={() => setSelectedId(null)} className="p-1 hover:bg-black/5 dark:hover:bg-white/10 rounded">
-                        <span className="material-symbols-outlined">close</span>
-                    </button>
-                </div>
-
-                {/* Common Settings */}
-                <div className="flex flex-col gap-2">
-                    <label className="text-xs font-bold uppercase opacity-50">Label</label>
-                    <div className="flex gap-2">
-                        <input 
-                            value={selectedField.label} 
-                            onChange={(e) => updateField(selectedField.id, { label: e.target.value })}
-                            className="flex-1 p-2 rounded border border-black/10 dark:border-white/10 bg-transparent text-sm"
-                        />
-                        <button 
-                            onClick={() => handleAiOptimizeLabel(selectedField.id, selectedField.label)}
-                            disabled={aiToolLoading}
-                            className="p-2 bg-secondary/10 text-secondary rounded hover:bg-secondary/20"
-                            title="AI Optimize"
-                        >
-                            <span className="material-symbols-outlined text-lg">auto_fix</span>
-                        </button>
-                    </div>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                        <input 
-                            type="checkbox" 
-                            checked={selectedField.required || false}
-                            onChange={(e) => updateField(selectedField.id, { required: e.target.checked })}
-                            className="rounded text-primary focus:ring-primary"
-                        />
-                        <span className="text-sm font-medium">Required Field</span>
-                    </label>
-                </div>
-
-                {/* Placeholder & Helper Text */}
-                {['text', 'email', 'textarea', 'number', 'phone', 'url'].includes(selectedField.type) && (
-                    <div className="flex flex-col gap-2">
-                        <label className="text-xs font-bold uppercase opacity-50">Placeholder</label>
-                        <input 
-                            value={selectedField.placeholder || ''} 
-                            onChange={(e) => updateField(selectedField.id, { placeholder: e.target.value })}
-                            className="w-full p-2 rounded border border-black/10 dark:border-white/10 bg-transparent text-sm"
-                            placeholder="Enter placeholder..."
-                        />
-                    </div>
-                )}
-
-                <div className="flex flex-col gap-2">
-                    <label className="text-xs font-bold uppercase opacity-50">Helper Text</label>
-                    <input 
-                        value={selectedField.helperText || ''} 
-                        onChange={(e) => updateField(selectedField.id, { helperText: e.target.value })}
-                        className="w-full p-2 rounded border border-black/10 dark:border-white/10 bg-transparent text-sm"
-                        placeholder="Instructions for user..."
-                    />
-                </div>
-
-                {/* Options for Select/Radio/Checkbox */}
-                {['select', 'radio', 'checkbox'].includes(selectedField.type) && (
-                    <div className="flex flex-col gap-3 pt-2 border-t border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 p-3 rounded-lg">
-                        <div className="flex justify-between items-center">
-                            <label className="text-xs font-bold uppercase opacity-70">Manage Options</label>
-                            <button 
-                                onClick={() => handleAiGenerateOptions(selectedField.id, selectedField.label)}
-                                className="text-xs text-secondary font-bold flex items-center gap-1 hover:underline"
-                            >
-                                <span className="material-symbols-outlined text-xs">auto_awesome</span> AI Gen
-                            </button>
-                        </div>
-                        <div className="flex flex-col gap-2">
-                            {(selectedField.options || []).map((opt, idx) => (
-                                <div key={idx} className="flex gap-2 items-center bg-white dark:bg-black/20 p-1 rounded border border-black/5 dark:border-white/5">
-                                    <span className="material-symbols-outlined text-xs opacity-30 cursor-move px-1">drag_indicator</span>
-                                    <input 
-                                        value={opt} 
-                                        onChange={(e) => {
-                                            const newOpts = [...(selectedField.options || [])];
-                                            newOpts[idx] = e.target.value;
-                                            updateField(selectedField.id, { options: newOpts });
-                                        }}
-                                        className="flex-1 p-1 bg-transparent text-sm outline-none"
-                                    />
-                                    <button 
-                                        onClick={() => {
-                                            const newOpts = selectedField.options?.filter((_, i) => i !== idx);
-                                            updateField(selectedField.id, { options: newOpts });
-                                        }}
-                                        className="text-red-500 hover:bg-red-500/10 p-1 rounded"
-                                    >
-                                        <span className="material-symbols-outlined text-lg">close</span>
-                                    </button>
-                                </div>
-                            ))}
-                            <button 
-                                onClick={() => {
-                                    const newOpts = [...(selectedField.options || []), `Option ${(selectedField.options?.length || 0) + 1}`];
-                                    updateField(selectedField.id, { options: newOpts });
-                                }}
-                                className="flex items-center justify-center gap-2 p-2 rounded border border-dashed border-black/20 dark:border-white/20 hover:border-primary text-sm font-medium transition-colors"
-                            >
-                                <span className="material-symbols-outlined text-lg">add</span> Add Option
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                {/* Product Specific Settings */}
-                {selectedField.type === 'product' && (
-                    <div className="flex flex-col gap-3 pt-2 border-t border-black/10 dark:border-white/10">
-                        <label className="text-xs font-bold uppercase opacity-50">Product Details</label>
-                        <div className="flex gap-2">
-                            <div className="flex-1">
-                                <label className="text-[10px] font-bold">Price</label>
-                                <input type="number" value={selectedField.price} onChange={(e) => updateField(selectedField.id, { price: Number(e.target.value) })} className="w-full p-2 rounded border border-black/10 dark:border-white/10 bg-transparent text-sm" />
-                            </div>
-                            <div className="w-20">
-                                <label className="text-[10px] font-bold">Currency</label>
-                                <input type="text" value={selectedField.currency} onChange={(e) => updateField(selectedField.id, { currency: e.target.value })} className="w-full p-2 rounded border border-black/10 dark:border-white/10 bg-transparent text-sm" />
-                            </div>
-                        </div>
-                        <div>
-                            <label className="text-[10px] font-bold">Description</label>
-                            <textarea value={selectedField.productDescription} onChange={(e) => updateField(selectedField.id, { productDescription: e.target.value })} className="w-full p-2 rounded border border-black/10 dark:border-white/10 bg-transparent text-sm" rows={2} />
-                        </div>
-                    </div>
-                )}
-
-                {/* Rating Settings */}
-                {selectedField.type === 'rating' && (
-                    <div className="flex flex-col gap-2 pt-2 border-t border-black/10 dark:border-white/10">
-                         <label className="text-xs font-bold uppercase opacity-50">Max Stars</label>
-                         <input type="number" value={selectedField.max || 5} onChange={(e) => updateField(selectedField.id, { max: Number(e.target.value) })} className="w-full p-2 rounded border border-black/10 dark:border-white/10 bg-transparent text-sm" />
-                    </div>
-                )}
-
-                {/* Slider Settings */}
-                {selectedField.type === 'slider' && (
-                    <div className="flex flex-col gap-3 pt-2 border-t border-black/10 dark:border-white/10">
-                        <label className="text-xs font-bold uppercase opacity-50">Range</label>
-                        <div className="flex gap-2">
-                            <div>
-                                <label className="text-[10px] font-bold">Min</label>
-                                <input type="number" value={selectedField.min || 0} onChange={(e) => updateField(selectedField.id, { min: Number(e.target.value) })} className="w-full p-2 rounded border border-black/10 dark:border-white/10 bg-transparent text-sm" />
-                            </div>
-                            <div>
-                                <label className="text-[10px] font-bold">Max</label>
-                                <input type="number" value={selectedField.max || 100} onChange={(e) => updateField(selectedField.id, { max: Number(e.target.value) })} className="w-full p-2 rounded border border-black/10 dark:border-white/10 bg-transparent text-sm" />
-                            </div>
-                            <div>
-                                <label className="text-[10px] font-bold">Step</label>
-                                <input type="number" value={selectedField.step || 1} onChange={(e) => updateField(selectedField.id, { step: Number(e.target.value) })} className="w-full p-2 rounded border border-black/10 dark:border-white/10 bg-transparent text-sm" />
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* HTML/Quote Content */}
-                {(selectedField.type === 'html' || selectedField.type === 'quote') && (
-                    <div className="flex flex-col gap-2 pt-2 border-t border-black/10 dark:border-white/10">
-                         <label className="text-xs font-bold uppercase opacity-50">Content</label>
-                         <textarea value={selectedField.content || ''} onChange={(e) => updateField(selectedField.id, { content: e.target.value })} className="w-full p-2 rounded border border-black/10 dark:border-white/10 bg-transparent text-sm font-mono" rows={4} />
-                         {selectedField.type === 'quote' && (
-                             <input placeholder="Author" value={selectedField.author || ''} onChange={(e) => updateField(selectedField.id, { author: e.target.value })} className="w-full p-2 rounded border border-black/10 dark:border-white/10 bg-transparent text-sm" />
-                         )}
-                    </div>
-                )}
-
-                <div className="mt-auto pt-4 border-t border-black/10 dark:border-white/10">
-                    <button onClick={() => removeField(selectedField.id)} className="w-full py-2 bg-red-500/10 text-red-600 dark:text-red-400 rounded font-bold text-sm hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center gap-2">
-                        <span className="material-symbols-outlined text-lg">delete</span> Delete Field
-                    </button>
-                </div>
+    <div className="flex flex-col h-screen w-full bg-background-light dark:bg-background-dark text-black dark:text-white overflow-hidden font-display">
+      {/* Header */}
+      <header className="flex items-center justify-between px-4 py-3 bg-white dark:bg-black/40 border-b border-black/10 dark:border-white/10 shrink-0 z-20">
+        <div className="flex items-center gap-4">
+            <button onClick={() => navigate('/dashboard')} className="flex items-center gap-1 text-sm font-bold hover:opacity-70">
+               <span className="material-symbols-outlined">arrow_back</span> Back
+            </button>
+            <div className="h-6 w-px bg-black/10 dark:bg-white/10 mx-2"></div>
+            <div className="flex items-center gap-2">
+                {form?.title && <span className="font-bold text-sm truncate max-w-[200px]">{form.title}</span>}
+                {draftSaved && <span className="text-xs text-green-500 animate-fade-in">Saved</span>}
             </div>
-        ) : (
-            /* Tabs (AI, Tools, Design) */
-            <div className="flex-1 flex flex-col gap-4">
-                <div className="flex p-1 bg-black/5 dark:bg-white/5 rounded-lg shrink-0">
-                  <button onClick={() => setActiveTab('ai')} className={`flex-1 py-2 text-xs font-bold rounded transition-all flex items-center justify-center gap-1 ${activeTab === 'ai' ? 'bg-secondary text-white shadow-md' : 'hover:bg-white/50 opacity-70'}`}>
+        </div>
+        <div className="flex items-center gap-3">
+             <div className="hidden sm:flex bg-black/5 dark:bg-white/5 p-1 rounded-lg">
+                 <button 
+                    onClick={() => setActiveTab('ai')}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all flex items-center gap-1 ${activeTab === 'ai' ? 'bg-white dark:bg-white/10 shadow-sm text-primary' : 'hover:bg-white/50 dark:hover:bg-white/5'}`}
+                 >
                     <span className="material-symbols-outlined text-sm">auto_awesome</span> AI
-                  </button>
-                  <button onClick={() => setActiveTab('tools')} className={`flex-1 py-2 text-xs font-bold rounded transition-all flex items-center justify-center gap-1 ${activeTab === 'tools' ? 'bg-white dark:bg-white/10 shadow-sm text-primary' : 'hover:bg-white/50 opacity-70'}`}>
-                    <span className="material-symbols-outlined text-sm">build</span> Tools
-                  </button>
-                  <button onClick={() => setActiveTab('design')} className={`flex-1 py-2 text-xs font-bold rounded transition-all flex items-center justify-center gap-1 ${activeTab === 'design' ? 'bg-pink-600 text-white shadow-md' : 'hover:bg-white/50 opacity-70'}`}>
+                 </button>
+                 <button 
+                    onClick={() => setActiveTab('tools')}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all flex items-center gap-1 ${activeTab === 'tools' ? 'bg-white dark:bg-white/10 shadow-sm text-primary' : 'hover:bg-white/50 dark:hover:bg-white/5'}`}
+                 >
+                    <span className="material-symbols-outlined text-sm">build</span> Fields
+                 </button>
+                 <button 
+                    onClick={() => setActiveTab('design')}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all flex items-center gap-1 ${activeTab === 'design' ? 'bg-white dark:bg-white/10 shadow-sm text-primary' : 'hover:bg-white/50 dark:hover:bg-white/5'}`}
+                 >
                     <span className="material-symbols-outlined text-sm">palette</span> Design
-                  </button>
-                </div>
-
-                <div className="flex-1 bg-white dark:bg-background-dark p-5 rounded-xl border border-black/10 dark:border-white/10 shadow-sm overflow-y-auto">
-                  {activeTab === 'ai' && (
-                     <div className="flex flex-col gap-4">
-                        <h2 className="font-bold text-secondary">AI Generator</h2>
-                        <textarea value={topic} onChange={e => setTopic(e.target.value)} className="w-full p-3 rounded-lg border border-secondary/20 bg-background-light dark:bg-white/5 h-32 text-sm" placeholder="Describe your form..." />
-                        <button onClick={handleGenerate} disabled={status === GenerationStatus.LOADING} className="w-full py-3 bg-secondary text-white rounded-lg font-bold text-sm flex justify-center items-center gap-2">
-                            {status === GenerationStatus.LOADING ? <span className="material-symbols-outlined animate-spin">refresh</span> : 'Generate'}
-                        </button>
-                     </div>
-                  )}
-
-                  {activeTab === 'tools' && (
-                     <div className="flex flex-col h-full">
-                         <div className="grid grid-cols-2 gap-3 mb-4">
-                            {FIELD_TYPES.map(item => (
-                                <div key={item.type} draggable onDragStart={(e) => handleDragStart(e, item.type)} onClick={() => addField(item.type)} className="flex flex-col items-center p-3 rounded border border-black/5 dark:border-white/5 hover:border-primary hover:bg-primary/5 cursor-grab active:cursor-grabbing transition-all">
-                                    <span className="material-symbols-outlined text-xl opacity-70">{item.icon}</span>
-                                    <span className="text-[10px] font-bold mt-1">{item.label}</span>
-                                </div>
-                            ))}
-                         </div>
-                         {form && form.fields.length > 0 && (
-                             <button onClick={clearAllFields} className="mt-auto w-full py-2 text-xs font-bold text-red-500 bg-red-500/10 hover:bg-red-500 hover:text-white rounded-lg transition-colors">
-                                 Clear Canvas
-                             </button>
-                         )}
-                     </div>
-                  )}
-
-                  {activeTab === 'design' && (
-                     <div className="flex flex-col gap-6 animate-fade-in">
-                         {/* Presets */}
-                         <div>
-                             <h3 className="text-xs font-bold uppercase text-black/50 dark:text-white/50 mb-3">Presets</h3>
-                             <div className="grid grid-cols-5 gap-2">
-                                 {THEME_PRESETS.map((p, i) => (
-                                     <button key={i} onClick={() => applyPreset(p.theme)} title={p.name} className="size-8 rounded-full border-2 border-white dark:border-white/10 shadow-sm hover:scale-110 transition-transform" style={{ backgroundColor: p.theme.primaryColor }}></button>
-                                 ))}
-                             </div>
-                         </div>
-                         
-                         {/* Colors */}
-                         <div className="space-y-3">
-                             <h3 className="text-xs font-bold uppercase text-black/50 dark:text-white/50">Colors</h3>
-                             <div className="flex items-center justify-between"><span className="text-sm">Primary</span><input type="color" value={currentTheme.primaryColor} onChange={(e) => updateTheme({ primaryColor: e.target.value })} className="size-8 rounded cursor-pointer border-0 p-0" /></div>
-                             <div className="flex items-center justify-between"><span className="text-sm">Background</span><input type="color" value={currentTheme.backgroundColor} onChange={(e) => updateTheme({ backgroundColor: e.target.value })} className="size-8 rounded cursor-pointer border-0 p-0" /></div>
-                             <div className="flex items-center justify-between"><span className="text-sm">Text</span><input type="color" value={currentTheme.textColor} onChange={(e) => updateTheme({ textColor: e.target.value })} className="size-8 rounded cursor-pointer border-0 p-0" /></div>
-                         </div>
-                         
-                         {/* Typography */}
-                         <div className="space-y-3">
-                             <h3 className="text-xs font-bold uppercase text-black/50 dark:text-white/50">Typography</h3>
-                             <div className="flex flex-col gap-1">
-                                 <select value={currentTheme.fontFamily} onChange={(e) => updateTheme({ fontFamily: e.target.value as any })} className="w-full p-2 rounded bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-sm">
-                                     <option value="sans">Sans Serif</option><option value="serif">Serif</option><option value="mono">Monospace</option>
-                                 </select>
-                             </div>
-                             <div className="flex flex-col gap-1">
-                                 <label className="text-sm">Border Radius</label>
-                                 <div className="flex bg-black/5 dark:bg-white/5 rounded p-1">{['sm', 'md', 'lg', 'full'].map((r) => (<button key={r} onClick={() => updateTheme({ borderRadius: r as any })} className={`flex-1 py-1 rounded text-[10px] font-bold uppercase ${currentTheme.borderRadius === r ? 'bg-white dark:bg-white/20 shadow-sm' : 'opacity-50'}`}>{r}</button>))}</div>
-                             </div>
-                         </div>
-
-                         {/* Branding Uploads - Fixed: Upload ONLY (No text inputs) */}
-                         <div className="space-y-3 border-t border-black/10 dark:border-white/10 pt-4">
-                             <h3 className="text-xs font-bold uppercase text-black/50 dark:text-white/50">Branding</h3>
-                             
-                             {/* Logo Upload */}
-                             <div className="flex flex-col gap-2">
-                                 <label className="text-sm">Logo</label>
-                                 {currentTheme.logo && (
-                                     <div className="relative h-16 w-full bg-black/5 dark:bg-white/5 rounded flex items-center justify-center mb-2">
-                                         <img src={currentTheme.logo} alt="Logo" className="max-h-12 object-contain" />
-                                         <button onClick={() => updateTheme({ logo: undefined })} className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1 hover:bg-red-500"><span className="material-symbols-outlined text-xs">close</span></button>
-                                     </div>
-                                 )}
-                                 <input type="file" accept="image/*" ref={logoInputRef} onChange={(e) => handleAssetUpload(e, 'logo')} className="hidden" />
-                                 <button onClick={() => logoInputRef.current?.click()} disabled={uploadingAsset === 'logo'} className="w-full py-2 border border-dashed border-black/20 dark:border-white/20 rounded hover:border-primary hover:text-primary text-sm font-medium transition-colors">{uploadingAsset === 'logo' ? 'Uploading...' : 'Upload Logo'}</button>
-                             </div>
-                             
-                             {/* Cover Upload */}
-                             <div className="flex flex-col gap-2">
-                                 <label className="text-sm">Cover Image</label>
-                                 {currentTheme.coverImage && (
-                                     <div className="relative h-24 w-full bg-black/5 dark:bg-white/5 rounded bg-cover bg-center mb-2" style={{ backgroundImage: `url(${currentTheme.coverImage})` }}>
-                                         <button onClick={() => updateTheme({ coverImage: undefined })} className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1 hover:bg-red-500"><span className="material-symbols-outlined text-xs">close</span></button>
-                                     </div>
-                                 )}
-                                 <input type="file" accept="image/*" ref={coverInputRef} onChange={(e) => handleAssetUpload(e, 'cover')} className="hidden" />
-                                 <button onClick={() => coverInputRef.current?.click()} disabled={uploadingAsset === 'cover'} className="w-full py-2 border border-dashed border-black/20 dark:border-white/20 rounded hover:border-primary hover:text-primary text-sm font-medium transition-colors">{uploadingAsset === 'cover' ? 'Uploading...' : 'Upload Cover Image'}</button>
-                             </div>
-                         </div>
-                     </div>
-                  )}
-                </div>
-            </div>
-        )}
-      </div>
-
-      {/* Canvas Area - Fixed Background (Transparent for workspace gray) */}
-      <div className="flex-1 flex flex-col h-full min-w-0">
-         <div className="flex-1 bg-transparent rounded-xl border border-black/10 dark:border-white/10 shadow-lg overflow-hidden flex flex-col relative">
+                 </button>
+             </div>
              
-             {/* Top Toolbar */}
-             <div className="p-3 border-b border-black/10 dark:border-white/10 bg-white dark:bg-[#1e1e1e] flex justify-between items-center shrink-0 z-10">
-                 <div className="flex items-center gap-2">
-                     <span className="material-symbols-outlined text-primary">design_services</span>
-                     <span className="font-bold text-sm uppercase tracking-wider">Canvas</span>
-                 </div>
-                 <div className="flex items-center gap-2">
-                     <button onClick={() => saveToFirestore('draft')} disabled={isSaving} className="px-3 py-1.5 text-xs font-bold border border-black/10 dark:border-white/10 rounded hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white">
-                         {draftSaved ? 'Saved' : 'Save Draft'}
-                     </button>
-                     <button onClick={() => navigate('/preview', { state: { formData: form, formId } })} className="px-3 py-1.5 text-xs font-bold border border-black/10 dark:border-white/10 rounded hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white">Preview</button>
-                     <button onClick={() => setShowShareModal(true)} disabled={!formId} className="px-3 py-1.5 text-xs font-bold border border-black/10 dark:border-white/10 rounded hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white">Share</button>
-                     <button onClick={() => saveToFirestore('published')} disabled={isSaving} className="px-3 py-1.5 text-xs font-bold bg-primary text-white rounded hover:bg-orange-600">Publish</button>
-                 </div>
-             </div>
+             {form?.status === 'published' && (
+                 <button onClick={() => setShowShareModal(true)} className="hidden sm:flex items-center gap-2 px-3 py-2 text-sm font-bold bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors">
+                     <span className="material-symbols-outlined text-base">share</span>
+                     Share
+                 </button>
+             )}
 
-             {/* Theme-Aware Canvas Container - BG Transparent to show workspace */}
-             <div 
-                className={`flex-1 overflow-y-auto p-4 sm:p-8 transition-all duration-200 ${currentTheme.fontFamily === 'serif' ? 'font-serif' : currentTheme.fontFamily === 'mono' ? 'font-mono' : 'font-sans'}`}
-                style={{ backgroundColor: 'transparent' }}
-                onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true); }}
-                onDragLeave={() => setIsDraggingOver(false)}
-                onDrop={handleDrop}
-                onClick={() => setSelectedId('form-settings')}
-             >
-                 {/* The Form Card - Styled with Theme Background */}
-                 <div className={`max-w-2xl mx-auto min-h-[600px] shadow-2xl transition-all rounded-lg overflow-hidden flex flex-col ${isDraggingOver ? 'ring-2 ring-primary/50 bg-primary/5' : ''}`} style={{ backgroundColor: currentTheme.backgroundColor, color: currentTheme.textColor, borderRadius: getBorderRadiusPx(currentTheme.borderRadius) }}>
-                     {/* Branding Header */}
-                     {currentTheme.coverImage && (
-                         <div className="w-full h-32 sm:h-48 bg-cover bg-center" style={{ backgroundImage: `url(${currentTheme.coverImage})` }}></div>
-                     )}
-                     
-                     <div className="p-8 flex-1 flex flex-col">
-                        {currentTheme.logo && (
-                            <div className="flex justify-center mb-6">
-                                <img src={currentTheme.logo} alt="Logo" className="h-16 object-contain" />
-                            </div>
-                        )}
+             <button onClick={() => navigate('/preview', { state: { formData: form, formId } })} className="px-3 py-2 text-sm font-bold hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors" title="Preview Form">
+                 <span className="material-symbols-outlined">visibility</span>
+             </button>
+             <button onClick={() => saveToFirestore('draft')} className="px-4 py-2 text-sm font-bold bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors">
+                 Save Draft
+             </button>
+             <button onClick={() => saveToFirestore('published')} className="px-4 py-2 text-sm font-bold bg-primary text-white hover:bg-orange-600 rounded-lg transition-colors shadow-lg shadow-primary/20 flex items-center gap-2">
+                 {isSaving ? <span className="material-symbols-outlined animate-spin text-sm">refresh</span> : (form?.status === 'published' ? 'Update' : 'Publish')}
+             </button>
+        </div>
+      </header>
 
-                        {/* Title Block */}
-                        <div 
-                            onClick={(e) => { e.stopPropagation(); setSelectedId('form-settings'); }} 
-                            className={`text-center mb-8 p-4 rounded cursor-pointer ${isFormSettingsSelected ? 'ring-2 ring-primary bg-primary/5' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
-                        >
-                            <input 
-                                value={form?.title || ''} 
-                                onChange={(e) => updateFormMeta('title', e.target.value)}
-                                className="text-3xl font-black text-center w-full bg-transparent outline-none placeholder:opacity-50" 
-                                placeholder="Form Title"
-                                style={{ color: currentTheme.textColor }}
-                            />
-                            <textarea 
-                                value={form?.description || ''}
-                                onChange={(e) => updateFormMeta('description', e.target.value)}
-                                className="w-full text-center bg-transparent outline-none resize-none mt-2 opacity-80"
-                                placeholder="Form Description"
-                                style={{ color: currentTheme.textColor }}
-                            />
-                        </div>
+      <div className="flex flex-1 overflow-hidden relative">
+          {/* Sidebar */}
+          <aside className="w-[320px] bg-white dark:bg-[#1e1e1e] border-r border-black/10 dark:border-white/10 flex flex-col overflow-hidden shrink-0 z-10">
+              {/* AI Tab */}
+              {activeTab === 'ai' && (
+                  <div className="flex flex-col h-full p-4 animate-fade-in">
+                      <div className="flex items-center gap-2 mb-4 text-secondary">
+                          <span className="material-symbols-outlined">auto_awesome</span>
+                          <h3 className="font-bold">Regal AI Engine</h3>
+                      </div>
+                      <div className="bg-secondary/10 p-4 rounded-xl mb-6 border border-secondary/20">
+                          <p className="text-sm mb-3 opacity-80">Describe your form (e.g., "Event Registration for a Music Festival") and let AI build it.</p>
+                          <textarea 
+                             className="w-full p-3 rounded-lg bg-white dark:bg-black/20 border border-black/10 dark:border-white/10 text-sm outline-none focus:ring-2 focus:ring-secondary/50 resize-none"
+                             rows={4}
+                             placeholder="Enter a topic..."
+                             value={topic}
+                             onChange={(e) => setTopic(e.target.value)}
+                          />
+                          <button 
+                            onClick={handleGenerate}
+                            disabled={status === GenerationStatus.LOADING || !topic.trim()}
+                            className="w-full mt-3 py-2 bg-secondary text-white rounded-lg font-bold text-sm hover:bg-purple-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                          >
+                             {status === GenerationStatus.LOADING ? 'Generating...' : 'Generate Form'}
+                          </button>
+                      </div>
+                  </div>
+              )}
 
-                        {/* Fields */}
-                        {form?.fields.map((field, index) => (
-                            <div 
-                                key={field.id}
-                                onClick={(e) => { e.stopPropagation(); setSelectedId(field.id); }}
-                                className="relative p-6 border transition-all cursor-pointer mb-4 group"
-                                style={{
-                                    backgroundColor: selectedId === field.id ? `${currentTheme.primaryColor}10` : 'rgba(255,255,255,0.05)',
-                                    borderColor: selectedId === field.id ? currentTheme.primaryColor : `${currentTheme.textColor}20`,
-                                    borderRadius: getBorderRadiusPx(currentTheme.borderRadius),
-                                    boxShadow: selectedId === field.id ? `0 0 0 2px ${currentTheme.primaryColor}20` : 'none'
-                                }}
-                            >
-                                <div className="flex justify-between items-start mb-2">
-                                    <label className="font-bold" style={{ color: currentTheme.textColor }}>
-                                        {field.label} {field.required && <span className="text-red-500">*</span>}
-                                    </label>
-                                    <div className="opacity-0 group-hover:opacity-100 flex gap-1">
-                                        <button onClick={(e) => {e.stopPropagation(); duplicateField(field.id)}} className="hover:text-primary"><span className="material-symbols-outlined text-lg">content_copy</span></button>
-                                        <button onClick={(e) => {e.stopPropagation(); removeField(field.id)}} className="hover:text-red-500"><span className="material-symbols-outlined text-lg">delete</span></button>
-                                    </div>
-                                </div>
-                                
-                                <div className="opacity-60 text-sm p-3 border border-dashed rounded bg-black/5 dark:bg-white/5" style={{ borderColor: currentTheme.textColor }}>
-                                    {['text', 'email'].includes(field.type) && `Input Preview`}
-                                    {field.type === 'select' && `Dropdown Preview: ${(field.options || []).join(', ')}`}
-                                    {field.type === 'radio' && `Radio Options: ${(field.options || []).join(', ')}`}
-                                    {field.type === 'checkbox' && `Checkbox Options: ${(field.options || []).join(', ')}`}
-                                    {!['text','email','select', 'radio', 'checkbox'].includes(field.type) && `${field.type.toUpperCase()} FIELD`}
-                                </div>
-                            </div>
-                        ))}
+              {/* Tools Tab */}
+              {activeTab === 'tools' && (
+                  <div className="flex flex-col h-full p-4 animate-fade-in overflow-y-auto">
+                      <h3 className="font-bold mb-4 flex items-center gap-2">
+                          <span className="material-symbols-outlined text-primary">drag_indicator</span>
+                          Form Fields
+                      </h3>
+                      <div className="grid grid-cols-2 gap-2">
+                          {FIELD_TYPES.map((field) => (
+                              <div 
+                                  key={field.type}
+                                  draggable
+                                  onDragStart={(e) => handleDragStart(e, field.type)}
+                                  onClick={() => addField(field.type)}
+                                  className="p-3 rounded-lg bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 hover:border-primary hover:bg-primary/5 cursor-move flex flex-col items-center gap-2 text-center transition-all group"
+                              >
+                                  <span className="material-symbols-outlined text-2xl opacity-50 group-hover:text-primary group-hover:opacity-100 transition-all">{field.icon}</span>
+                                  <span className="text-xs font-bold">{field.label}</span>
+                              </div>
+                          ))}
+                      </div>
+                  </div>
+              )}
 
-                        {(!form || form.fields.length === 0) && (
-                            <div className="text-center opacity-40 py-10 border-2 border-dashed rounded-lg" style={{ borderColor: currentTheme.textColor }}>
-                                <p>Drag fields here</p>
-                            </div>
-                        )}
+              {/* Design Tab */}
+              {activeTab === 'design' && (
+                  <div className="flex flex-col h-full p-4 animate-fade-in overflow-y-auto gap-6">
+                      <div>
+                          <h3 className="font-bold mb-3 text-sm uppercase tracking-wider text-black/50 dark:text-white/50">Presets</h3>
+                          <div className="grid grid-cols-2 gap-2">
+                              {THEME_PRESETS.map((preset) => (
+                                  <button
+                                      key={preset.name}
+                                      onClick={() => applyPreset(preset.theme)}
+                                      className="p-2 rounded-lg border border-black/10 dark:border-white/10 text-xs font-bold hover:border-primary transition-colors flex items-center gap-2 overflow-hidden"
+                                      style={{ background: preset.theme.backgroundColor, color: preset.theme.textColor }}
+                                  >
+                                      <div className="size-4 rounded-full shrink-0" style={{ background: preset.theme.primaryColor }}></div>
+                                      <span className="truncate">{preset.name}</span>
+                                  </button>
+                              ))}
+                          </div>
+                      </div>
 
-                        <div className="mt-8 flex justify-center">
-                            <button className="px-8 py-3 font-bold text-white rounded shadow-lg opacity-90" style={{ backgroundColor: currentTheme.primaryColor, borderRadius: getBorderRadiusPx(currentTheme.borderRadius) }}>
-                                {form?.submitButtonText || 'Submit'}
-                            </button>
-                        </div>
-                     </div>
-                 </div>
-             </div>
-         </div>
+                      <div className="space-y-4">
+                          <h3 className="font-bold mb-3 text-sm uppercase tracking-wider text-black/50 dark:text-white/50">Colors</h3>
+                          <div className="flex items-center justify-between p-2 rounded-lg bg-black/5 dark:bg-white/5">
+                              <span className="text-sm font-bold">Primary</span>
+                              <input type="color" value={currentTheme.primaryColor} onChange={(e) => updateTheme({ primaryColor: e.target.value })} className="bg-transparent border-none outline-none size-8 cursor-pointer" />
+                          </div>
+                          <div className="flex items-center justify-between p-2 rounded-lg bg-black/5 dark:bg-white/5">
+                              <span className="text-sm font-bold">Background</span>
+                              <input type="color" value={currentTheme.backgroundColor} onChange={(e) => updateTheme({ backgroundColor: e.target.value })} className="bg-transparent border-none outline-none size-8 cursor-pointer" />
+                          </div>
+                          <div className="flex items-center justify-between p-2 rounded-lg bg-black/5 dark:bg-white/5">
+                              <span className="text-sm font-bold">Text</span>
+                              <input type="color" value={currentTheme.textColor} onChange={(e) => updateTheme({ textColor: e.target.value })} className="bg-transparent border-none outline-none size-8 cursor-pointer" />
+                          </div>
+                      </div>
+
+                      <div className="space-y-4">
+                          <h3 className="font-bold mb-3 text-sm uppercase tracking-wider text-black/50 dark:text-white/50">Typography</h3>
+                          <div className="flex bg-black/5 dark:bg-white/5 p-1 rounded-lg">
+                              {['sans', 'serif', 'mono'].map((font) => (
+                                  <button
+                                      key={font}
+                                      onClick={() => updateTheme({ fontFamily: font as any })}
+                                      className={`flex-1 py-1.5 text-xs font-bold rounded capitalize ${currentTheme.fontFamily === font ? 'bg-white dark:bg-white/10 shadow-sm text-primary' : 'opacity-60'}`}
+                                  >
+                                      {font}
+                                  </button>
+                              ))}
+                          </div>
+                      </div>
+
+                      <div className="space-y-4">
+                          <h3 className="font-bold mb-3 text-sm uppercase tracking-wider text-black/50 dark:text-white/50">Radius</h3>
+                          <div className="flex flex-wrap gap-1 bg-black/5 dark:bg-white/5 p-1 rounded-lg">
+                              {['none', 'sm', 'md', 'lg', 'xl', 'full'].map((r) => (
+                                  <button
+                                      key={r}
+                                      onClick={() => updateTheme({ borderRadius: r as any })}
+                                      className={`flex-1 min-w-[40px] py-1.5 text-xs font-bold rounded capitalize ${currentTheme.borderRadius === r ? 'bg-white dark:bg-white/10 shadow-sm text-primary' : 'opacity-60'}`}
+                                  >
+                                      {r}
+                                  </button>
+                              ))}
+                          </div>
+                      </div>
+
+                      <div className="space-y-4">
+                          <h3 className="font-bold mb-3 text-sm uppercase tracking-wider text-black/50 dark:text-white/50">Branding</h3>
+                          
+                          <div className="p-3 rounded-lg border border-dashed border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-center relative group">
+                              <input type="file" ref={logoInputRef} className="hidden" accept="image/*" onChange={(e) => handleAssetUpload(e, 'logo')} />
+                              {currentTheme.logo ? (
+                                  <div className="relative">
+                                      <img src={currentTheme.logo} alt="Logo" className="h-10 mx-auto object-contain" />
+                                      <button onClick={() => updateTheme({ logo: undefined })} className="absolute -top-2 -right-2 size-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:scale-110 transition-transform"><span className="material-symbols-outlined text-xs">close</span></button>
+                                  </div>
+                              ) : (
+                                  <div onClick={() => logoInputRef.current?.click()} className="cursor-pointer flex flex-col items-center gap-1 py-2">
+                                      <span className="material-symbols-outlined text-primary">add_photo_alternate</span>
+                                      <span className="text-xs font-bold opacity-70">Upload Logo</span>
+                                  </div>
+                              )}
+                              {uploadingAsset === 'logo' && <div className="absolute inset-0 bg-white/80 flex items-center justify-center"><span className="material-symbols-outlined animate-spin text-primary">refresh</span></div>}
+                          </div>
+
+                          <div className="p-3 rounded-lg border border-dashed border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-center relative group">
+                              <input type="file" ref={coverInputRef} className="hidden" accept="image/*" onChange={(e) => handleAssetUpload(e, 'cover')} />
+                              {currentTheme.coverImage ? (
+                                  <div className="relative">
+                                      <img src={currentTheme.coverImage} alt="Cover" className="h-20 w-full object-cover rounded" />
+                                      <button onClick={() => updateTheme({ coverImage: undefined })} className="absolute -top-2 -right-2 size-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:scale-110 transition-transform"><span className="material-symbols-outlined text-xs">close</span></button>
+                                  </div>
+                              ) : (
+                                  <div onClick={() => coverInputRef.current?.click()} className="cursor-pointer flex flex-col items-center gap-1 py-2">
+                                      <span className="material-symbols-outlined text-primary">image</span>
+                                      <span className="text-xs font-bold opacity-70">Upload Cover Image</span>
+                                  </div>
+                              )}
+                              {uploadingAsset === 'cover' && <div className="absolute inset-0 bg-white/80 flex items-center justify-center"><span className="material-symbols-outlined animate-spin text-primary">refresh</span></div>}
+                          </div>
+                      </div>
+                  </div>
+              )}
+          </aside>
+
+          {/* Main Canvas */}
+          <main 
+            className="flex-1 bg-[#f3f4f6] dark:bg-[#121212] overflow-y-auto p-8 flex justify-center transition-all duration-300"
+            onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true); }}
+            onDragLeave={() => setIsDraggingOver(false)}
+            onDrop={handleDrop}
+          >
+              <div 
+                  className={`w-full max-w-2xl transition-all duration-300 ${isDraggingOver ? 'scale-[1.02] ring-4 ring-primary/20' : ''}`}
+                  style={{
+                      backgroundColor: currentTheme.backgroundColor,
+                      color: currentTheme.textColor,
+                      borderRadius: getBorderRadiusPx(currentTheme.borderRadius),
+                      fontFamily: currentTheme.fontFamily === 'mono' ? '"Fira Code", monospace' : currentTheme.fontFamily === 'serif' ? '"Playfair Display", serif' : '"Manrope", sans-serif'
+                  }}
+              >
+                  {currentTheme.coverImage && (
+                      <div className="w-full h-48 bg-cover bg-center rounded-t-[inherit]" style={{ backgroundImage: `url(${currentTheme.coverImage})` }}></div>
+                  )}
+
+                  <div className="p-8 md:p-12 min-h-[600px] flex flex-col gap-6 shadow-xl relative">
+                      {currentTheme.logo && <img src={currentTheme.logo} alt="Logo" className="h-16 mb-4 object-contain mx-auto" />}
+
+                      {/* Title Block */}
+                      <div 
+                          className={`border-b pb-6 text-center cursor-pointer transition-colors border-transparent hover:bg-black/5 dark:hover:bg-white/5 rounded-lg p-4 ${titleError ? 'ring-2 ring-red-500 bg-red-50 dark:bg-red-900/10' : ''}`}
+                          onClick={() => setSelectedId('form-settings')}
+                      >
+                          {form?.title ? (
+                              <h1 className="text-3xl font-black mb-2 outline-none" contentEditable suppressContentEditableWarning onBlur={(e) => updateFormMeta('title', e.target.innerText)}>{form.title}</h1>
+                          ) : (
+                             <h1 className="text-3xl font-black mb-2 text-black/30 dark:text-white/30 italic">Untitled Form</h1>
+                          )}
+                          <p className="opacity-70 outline-none" contentEditable suppressContentEditableWarning onBlur={(e) => updateFormMeta('description', e.target.innerText)}>{form?.description || 'Add description...'}</p>
+                      </div>
+
+                      {form?.fields.map((field) => (
+                          <div 
+                              key={field.id}
+                              onClick={() => setSelectedId(field.id)}
+                              className={`group relative p-4 rounded-lg transition-all border-2 cursor-pointer ${selectedId === field.id ? 'border-primary bg-primary/5' : 'border-transparent hover:border-black/10 dark:hover:border-white/10'}`}
+                          >
+                              <div className="flex items-center justify-between mb-2">
+                                  <label className="font-bold text-sm opacity-90 pointer-events-none">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
+                                  {selectedId === field.id && (
+                                      <div className="flex items-center gap-1 bg-white dark:bg-black shadow-sm rounded-lg p-1">
+                                          <button onClick={(e) => {e.stopPropagation(); handleAiOptimizeLabel(field.id, field.label)}} className="p-1 hover:bg-black/5 rounded text-primary" title="AI Optimize Label"><span className="material-symbols-outlined text-sm">auto_awesome</span></button>
+                                          <button onClick={(e) => {e.stopPropagation(); duplicateField(field.id)}} className="p-1 hover:bg-black/5 rounded" title="Duplicate"><span className="material-symbols-outlined text-sm">content_copy</span></button>
+                                          <button onClick={(e) => {e.stopPropagation(); removeField(field.id)}} className="p-1 hover:bg-red-50 text-red-500 rounded" title="Delete"><span className="material-symbols-outlined text-sm">delete</span></button>
+                                      </div>
+                                  )}
+                              </div>
+                              
+                              {/* Field Previews */}
+                              <div className="pointer-events-none opacity-60">
+                                  {['text', 'email', 'number', 'url'].includes(field.type) && <div className="h-10 w-full border border-current rounded opacity-30 bg-black/5"></div>}
+                                  {field.type === 'phone' && (
+                                      <div className="h-10 w-full border border-current rounded opacity-30 bg-black/5 flex items-center px-3 gap-2">
+                                          {field.showCountryCode && <span className="text-xs border-r border-current pr-2 opacity-50">+1</span>}
+                                          <span>{field.placeholder || ''}</span>
+                                      </div>
+                                  )}
+                                  {field.type === 'textarea' && <div className="h-24 w-full border border-current rounded opacity-30 bg-black/5"></div>}
+                                  {field.type === 'select' && <div className="h-10 w-full border border-current rounded opacity-30 bg-black/5 flex items-center justify-between px-3"><span className="text-xs">Dropdown</span><span className="material-symbols-outlined text-sm">arrow_drop_down</span></div>}
+                                  {['radio', 'checkbox'].includes(field.type) && (
+                                      <div className="flex flex-col gap-2">
+                                          {field.options?.slice(0, 3).map((o, i) => (
+                                              <div key={i} className="flex items-center gap-2"><div className={`size-4 border border-current ${field.type === 'radio' ? 'rounded-full' : 'rounded'}`}></div><span className="text-sm">{o}</span></div>
+                                          ))}
+                                      </div>
+                                  )}
+                                  {field.helperText && <p className="text-[10px] mt-1 opacity-70">{field.helperText}</p>}
+                              </div>
+                          </div>
+                      ))}
+
+                      {(!form?.fields || form.fields.length === 0) && (
+                          <div className="border-2 border-dashed border-black/10 dark:border-white/10 rounded-xl p-10 text-center flex flex-col items-center justify-center text-black/40 dark:text-white/40">
+                              <span className="material-symbols-outlined text-4xl mb-2">drag_indicator</span>
+                              <p className="font-bold">Drag & Drop fields here</p>
+                          </div>
+                      )}
+
+                      <div className="mt-6 pt-6 border-t" style={{ borderColor: `${currentTheme.textColor}20` }}>
+                          <button className="w-full py-4 font-bold text-lg rounded shadow-lg opacity-50 cursor-not-allowed" style={{ backgroundColor: currentTheme.primaryColor, color: '#fff', borderRadius: getBorderRadiusPx(currentTheme.borderRadius) }}>
+                              {form?.submitButtonText || 'Submit'}
+                          </button>
+                      </div>
+                  </div>
+              </div>
+          </main>
+
+          {/* Right Properties Panel */}
+          {selectedId && (
+              <aside className="w-[300px] bg-white dark:bg-[#1e1e1e] border-l border-black/10 dark:border-white/10 flex flex-col overflow-y-auto shrink-0 z-10 animate-slide-in">
+                  <div className="p-4 border-b border-black/10 dark:border-white/10 flex justify-between items-center bg-black/5 dark:bg-white/5">
+                      <h3 className="font-bold text-sm uppercase tracking-wider">Properties</h3>
+                      <button onClick={() => setSelectedId(null)}><span className="material-symbols-outlined text-lg">close</span></button>
+                  </div>
+                  
+                  {isFormSettingsSelected ? (
+                      <div className="p-4 flex flex-col gap-6">
+                           <div className="flex flex-col gap-2">
+                               <label className="text-xs font-bold uppercase opacity-50">Form Title</label>
+                               <input className="p-2 border border-black/10 dark:border-white/10 rounded bg-transparent" value={form?.title || ''} onChange={(e) => updateFormMeta('title', e.target.value)} />
+                           </div>
+                           <div className="flex flex-col gap-2">
+                               <label className="text-xs font-bold uppercase opacity-50">Description</label>
+                               <textarea rows={3} className="p-2 border border-black/10 dark:border-white/10 rounded bg-transparent" value={form?.description || ''} onChange={(e) => updateFormMeta('description', e.target.value)} />
+                           </div>
+                           <div className="flex flex-col gap-2">
+                               <label className="text-xs font-bold uppercase opacity-50">Submit Button Text</label>
+                               <input className="p-2 border border-black/10 dark:border-white/10 rounded bg-transparent" value={form?.submitButtonText || ''} onChange={(e) => updateFormMeta('submitButtonText', e.target.value)} />
+                           </div>
+                           <div className="pt-4 border-t border-black/10 dark:border-white/10">
+                               <button onClick={clearAllFields} className="w-full py-2 text-red-500 border border-red-500 rounded hover:bg-red-50 font-bold text-xs">Clear All Fields</button>
+                           </div>
+                      </div>
+                  ) : selectedField ? (
+                      <div className="p-4 flex flex-col gap-6">
+                           <div className="flex flex-col gap-2">
+                               <label className="text-xs font-bold uppercase opacity-50">Label</label>
+                               <div className="flex gap-2">
+                                   <input className="p-2 border border-black/10 dark:border-white/10 rounded bg-transparent flex-1" value={selectedField.label} onChange={(e) => updateField(selectedField.id, { label: e.target.value })} />
+                                   <button onClick={() => handleAiOptimizeLabel(selectedField.id, selectedField.label)} disabled={aiToolLoading} className="p-2 bg-primary/10 text-primary rounded hover:bg-primary/20" title="Optimize with AI"><span className="material-symbols-outlined text-sm">auto_awesome</span></button>
+                               </div>
+                           </div>
+                           
+                           <div className="flex items-center justify-between">
+                               <label className="text-xs font-bold uppercase opacity-50">Required</label>
+                               <input type="checkbox" checked={selectedField.required} onChange={(e) => updateField(selectedField.id, { required: e.target.checked })} className="accent-primary size-4" />
+                           </div>
+
+                           {['text', 'textarea', 'email', 'number', 'phone', 'url'].includes(selectedField.type) && (
+                               <div className="flex flex-col gap-4">
+                                   <div className="flex flex-col gap-2">
+                                       <label className="text-xs font-bold uppercase opacity-50">Placeholder</label>
+                                       <input className="p-2 border border-black/10 dark:border-white/10 rounded bg-transparent" value={selectedField.placeholder || ''} onChange={(e) => updateField(selectedField.id, { placeholder: e.target.value })} />
+                                   </div>
+                                   <div className="flex flex-col gap-2">
+                                       <label className="text-xs font-bold uppercase opacity-50">Helper Text</label>
+                                       <input className="p-2 border border-black/10 dark:border-white/10 rounded bg-transparent" value={selectedField.helperText || ''} onChange={(e) => updateField(selectedField.id, { helperText: e.target.value })} placeholder="Instructional text below input" />
+                                   </div>
+                               </div>
+                           )}
+                           
+                           {selectedField.type === 'phone' && (
+                               <div className="flex items-center justify-between">
+                                   <label className="text-xs font-bold uppercase opacity-50">Show Country Code</label>
+                                   <input type="checkbox" checked={selectedField.showCountryCode || false} onChange={(e) => updateField(selectedField.id, { showCountryCode: e.target.checked })} className="accent-primary size-4" />
+                               </div>
+                           )}
+
+                           {['select', 'radio', 'checkbox'].includes(selectedField.type) && (
+                               <div className="flex flex-col gap-3">
+                                   <div className="flex justify-between items-center">
+                                       <label className="text-xs font-bold uppercase opacity-50">Options</label>
+                                       <button onClick={() => handleAiGenerateOptions(selectedField.id, selectedField.label)} disabled={aiToolLoading} className="text-[10px] font-bold text-primary hover:underline flex items-center gap-1"><span className="material-symbols-outlined text-[10px]">auto_awesome</span> Generate</button>
+                                   </div>
+                                   <div className="flex flex-col gap-2">
+                                       {selectedField.options?.map((opt, idx) => (
+                                           <div key={idx} className="flex gap-2">
+                                               <input className="p-1.5 text-sm border border-black/10 dark:border-white/10 rounded bg-transparent flex-1" value={opt} onChange={(e) => {
+                                                   const newOpts = [...(selectedField.options || [])];
+                                                   newOpts[idx] = e.target.value;
+                                                   updateField(selectedField.id, { options: newOpts });
+                                               }} />
+                                               <button onClick={() => {
+                                                   const newOpts = selectedField.options?.filter((_, i) => i !== idx);
+                                                   updateField(selectedField.id, { options: newOpts });
+                                               }} className="text-red-500 hover:bg-red-50 p-1 rounded"><span className="material-symbols-outlined text-sm">close</span></button>
+                                           </div>
+                                       ))}
+                                       <button onClick={() => updateField(selectedField.id, { options: [...(selectedField.options || []), `Option ${(selectedField.options?.length || 0) + 1}`] })} className="text-xs font-bold text-primary flex items-center gap-1 mt-1"><span className="material-symbols-outlined text-sm">add</span> Add Option</button>
+                                   </div>
+                               </div>
+                           )}
+                      </div>
+                  ) : null}
+              </aside>
+          )}
       </div>
 
       {/* Share Modal */}
       {showShareModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-              <div className="bg-white dark:bg-[#1e1e1e] p-6 rounded-xl max-w-md w-full shadow-2xl">
-                  <h3 className="text-xl font-bold mb-2">Share Form</h3>
-                  <p className="text-sm opacity-70 mb-4">Your form is ready!</p>
-                  <div className="flex gap-2">
-                      <input readOnly value={`${window.location.origin}/#/form/${customSlug || formId}`} className="flex-1 p-2 border rounded bg-black/5 dark:bg-white/5 text-sm" />
-                      <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/#/form/${customSlug || formId}`); setCopySuccess(true); }} className="bg-primary text-white px-4 rounded font-bold text-sm">{copySuccess ? 'Copied!' : 'Copy'}</button>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+              <div className="bg-white dark:bg-[#1e1e1e] rounded-2xl shadow-2xl w-full max-w-md border border-black/10 dark:border-white/10 overflow-hidden">
+                  <div className="p-6 text-center">
+                      <div className="size-16 bg-green-100 dark:bg-green-900/20 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
+                          <span className="material-symbols-outlined text-3xl">check</span>
+                      </div>
+                      <h2 className="text-2xl font-black mb-2">Form Published!</h2>
+                      <p className="text-black/60 dark:text-white/60 text-sm mb-6">Your form is live and ready to collect responses.</p>
+                      
+                      <div className="bg-black/5 dark:bg-black/30 p-3 rounded-lg flex items-center gap-2 mb-4 border border-black/5 dark:border-white/5">
+                          <span className="material-symbols-outlined text-black/40 dark:text-white/40">link</span>
+                          <input readOnly value={shareUrl} className="bg-transparent border-none outline-none text-sm font-mono text-black/80 dark:text-white/80 flex-1 truncate" />
+                          <button 
+                              onClick={() => {
+                                  navigator.clipboard.writeText(shareUrl);
+                                  setCopySuccess(true);
+                                  setTimeout(() => setCopySuccess(false), 2000);
+                              }}
+                              className="text-primary hover:bg-white dark:hover:bg-white/10 p-1.5 rounded transition-colors font-bold text-xs"
+                          >
+                              {copySuccess ? 'Copied!' : 'Copy'}
+                          </button>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                          <button onClick={() => {
+                              window.open(`https://twitter.com/intent/tweet?text=Check out my form!&url=${encodeURIComponent(shareUrl)}`, '_blank');
+                          }} className="flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[#1DA1F2]/10 text-[#1DA1F2] font-bold text-sm hover:bg-[#1DA1F2]/20 transition-colors">
+                              <svg className="size-4" fill="currentColor" viewBox="0 0 24 24"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/></svg>
+                              Twitter
+                          </button>
+                          <button onClick={() => {
+                               window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`, '_blank');
+                          }} className="flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[#0A66C2]/10 text-[#0A66C2] font-bold text-sm hover:bg-[#0A66C2]/20 transition-colors">
+                              <svg className="size-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                              LinkedIn
+                          </button>
+                      </div>
                   </div>
-                  <button onClick={() => setShowShareModal(false)} className="mt-4 w-full py-2 border rounded text-sm font-bold">Close</button>
+                  <div className="bg-black/5 dark:bg-white/5 p-4 border-t border-black/10 dark:border-white/10 flex justify-between gap-3">
+                      <button onClick={() => setShowShareModal(false)} className="flex-1 py-3 text-sm font-bold rounded-lg border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 transition-colors">Close</button>
+                      <button onClick={() => navigate('/dashboard')} className="flex-1 py-3 text-sm font-bold rounded-lg bg-black text-white dark:bg-white dark:text-black hover:opacity-80 transition-opacity">Go to Dashboard</button>
+                  </div>
               </div>
           </div>
       )}

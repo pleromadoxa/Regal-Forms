@@ -11,7 +11,7 @@ export interface FormTheme {
   backgroundColor: string;
   textColor: string;
   fontFamily: 'sans' | 'serif' | 'mono';
-  borderRadius: 'none' | 'sm' | 'md' | 'lg' | 'full';
+  borderRadius: 'none' | 'sm' | 'md' | 'lg' | 'xl' | 'full';
   logo?: string;
   coverImage?: string;
 }
@@ -33,6 +33,7 @@ export interface FormField {
   author?: string; // For Quote author
   videoUrl?: string; // For Youtube
   targetDate?: string; // For Countdown
+  showCountryCode?: boolean; // For Phone fields
 
   // Commerce & Advanced properties
   price?: number;

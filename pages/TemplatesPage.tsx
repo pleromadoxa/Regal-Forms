@@ -5,6 +5,202 @@ import { GeneratedForm, FormField } from '../types';
 
 // --- Template Library Data ---
 const TEMPLATES: Record<string, GeneratedForm & { category: string; icon: string; color: string }> = {
+  // --- Landing Pages ---
+  'app-launch': {
+    category: 'Landing Page',
+    icon: 'rocket',
+    color: 'bg-pink-600',
+    title: "App Launch Waitlist",
+    description: "Generate hype for your new mobile application.",
+    collectEmails: true,
+    theme: { primaryColor: '#f472b6', backgroundColor: '#1a1a2e', textColor: '#e94560', fontFamily: 'sans', borderRadius: 'xl' }, // Neon Nights
+    fields: [
+      { id: 'al1', label: 'Hero', type: 'html', content: "<h1 class='text-4xl font-black text-center mb-2'>The Future of Task Management</h1><p class='text-center text-lg opacity-80'>Join 10,000+ others waiting for early access.</p>" },
+      { id: 'al2', label: 'Email Address', type: 'email', required: true, placeholder: 'you@example.com' },
+      { id: 'al3', label: 'What platform do you use?', type: 'radio', options: ['iOS', 'Android', 'Both'], required: true },
+      { id: 'al4', label: 'Features you need most', type: 'checkbox', options: ['Offline Mode', 'Collaboration', 'Dark Mode', 'Integrations'], required: false }
+    ]
+  },
+  'product-waitlist': {
+    category: 'Landing Page',
+    icon: 'rocket_launch',
+    color: 'bg-violet-600',
+    title: "Product Waitlist",
+    description: "Collect emails for your upcoming product launch.",
+    collectEmails: true,
+    theme: { primaryColor: '#38bdf8', backgroundColor: '#020617', textColor: '#f8fafc', fontFamily: 'sans', borderRadius: 'xl' }, // Deep Space
+    fields: [
+      { id: 'pw1', label: 'Join the Waitlist', type: 'html', content: "<h2 class='text-2xl font-bold text-center'>Something big is coming.</h2><p class='text-center opacity-80'>Be the first to know when we launch.</p>" },
+      { id: 'pw2', label: 'Full Name', type: 'text', required: true },
+      { id: 'pw3', label: 'Email Address', type: 'email', required: true },
+      { id: 'pw4', label: 'Company Name', type: 'text', required: false },
+      { id: 'pw5', label: 'What problem are you trying to solve?', type: 'textarea', required: false }
+    ]
+  },
+  'course-presale': {
+    category: 'Landing Page',
+    icon: 'school',
+    color: 'bg-amber-500',
+    title: "Course Pre-sale",
+    description: "Sell your course before it launches.",
+    collectEmails: true,
+    theme: { primaryColor: '#ffd700', backgroundColor: '#240046', textColor: '#e0aaff', fontFamily: 'serif', borderRadius: 'xl' }, // Royal Gold
+    fields: [
+      { id: 'cp1', label: 'Course Intro', type: 'html', content: "<h2 class='text-3xl font-bold'>Master Photography in 30 Days</h2><p>Pre-order now and save 50%.</p>" },
+      { id: 'cp2', label: 'Full Name', type: 'text', required: true },
+      { id: 'cp3', label: 'Email', type: 'email', required: true },
+      { id: 'cp4', label: 'Experience Level', type: 'select', options: ['Beginner', 'Intermediate', 'Advanced'], required: true },
+      { id: 'cp5', label: 'Pre-order Package ($49)', type: 'product', price: 49, currency: 'USD', productDescription: 'Full access + Bonus presets', required: true }
+    ]
+  },
+  'webinar-registration': {
+    category: 'Landing Page',
+    icon: 'cast_for_education',
+    color: 'bg-purple-600',
+    title: "Webinar Registration",
+    description: "Sign up page for online events and webinars.",
+    collectEmails: true,
+    theme: { primaryColor: '#a855f7', backgroundColor: '#faf5ff', textColor: '#3b0764', fontFamily: 'sans', borderRadius: 'full' }, // Lavender Dream
+    fields: [
+      { id: 'wr1', label: 'Event Details', type: 'html', content: "<div class='text-center'><h3 class='text-xl font-bold'>Mastering AI Workflows</h3><p>October 24th, 2025 • 2:00 PM EST</p></div>" },
+      { id: 'wr2', label: 'First Name', type: 'text', required: true },
+      { id: 'wr3', label: 'Last Name', type: 'text', required: true },
+      { id: 'wr4', label: 'Email', type: 'email', required: true },
+      { id: 'wr5', label: 'Job Title', type: 'text', required: true },
+      { id: 'wr6', label: 'Questions for the speaker?', type: 'textarea', required: false }
+    ]
+  },
+  'newsletter-signup': {
+    category: 'Landing Page',
+    icon: 'mail',
+    color: 'bg-blue-500',
+    title: "Newsletter Subscription",
+    description: "Simple form to grow your email list.",
+    collectEmails: true,
+    theme: { primaryColor: '#334155', backgroundColor: '#f8fafc', textColor: '#0f172a', fontFamily: 'sans', borderRadius: 'sm' }, // Slate Corporate
+    fields: [
+      { id: 'ns1', label: 'Header', type: 'html', content: "<h2 class='text-xl font-bold'>Weekly Insights</h2><p>Get the latest tech news delivered to your inbox.</p>" },
+      { id: 'ns2', label: 'Email Address', type: 'email', required: true },
+      { id: 'ns3', label: 'Interests', type: 'checkbox', options: ['Technology', 'Design', 'Marketing', 'Business'], required: false }
+    ]
+  },
+  'ebook-download': {
+    category: 'Landing Page',
+    icon: 'book',
+    color: 'bg-emerald-600',
+    title: "E-book Download",
+    description: "Lead magnet form for digital downloads.",
+    collectEmails: true,
+    theme: { primaryColor: '#0ea5e9', backgroundColor: '#f0f9ff', textColor: '#0f172a', fontFamily: 'sans', borderRadius: 'md' }, // Ocean Blue
+    fields: [
+      { id: 'eb1', label: 'Cover', type: 'html', content: "<div class='p-4 bg-blue-100 rounded-lg text-center mb-4'><strong>Free Guide:</strong> The Ultimate Guide to Remote Work</div>" },
+      { id: 'eb2', label: 'First Name', type: 'text', required: true },
+      { id: 'eb3', label: 'Work Email', type: 'email', required: true },
+      { id: 'eb4', label: 'Company Website', type: 'url', required: false }
+    ]
+  },
+
+  // --- Polls & Surveys ---
+  'feature-voting': {
+    category: 'Polls & Surveys',
+    icon: 'thumbs_up_down',
+    color: 'bg-green-500',
+    title: "Feature Voting Board",
+    description: "Let users vote on the next feature to build.",
+    collectEmails: false,
+    theme: { primaryColor: '#00ff00', backgroundColor: '#000000', textColor: '#00ff00', fontFamily: 'mono', borderRadius: 'none' }, // Tech Terminal
+    fields: [
+      { id: 'fv1', label: 'Vote for the next feature', type: 'radio', options: ['Dark Mode', 'Mobile App', 'API Access', 'Zapier Integration'], required: true },
+      { id: 'fv2', label: 'How important is this to you?', type: 'slider', min: 1, max: 10, step: 1, required: true },
+      { id: 'fv3', label: 'Why do you need this?', type: 'textarea', required: false }
+    ]
+  },
+  'brand-awareness': {
+    category: 'Polls & Surveys',
+    icon: 'campaign',
+    color: 'bg-lime-600',
+    title: "Brand Awareness Survey",
+    description: "Measure how well people know your brand.",
+    collectEmails: false,
+    theme: { primaryColor: '#606c38', backgroundColor: '#fefae0', textColor: '#283618', fontFamily: 'serif', borderRadius: 'md' }, // Nature Walk
+    fields: [
+      { id: 'ba1', label: 'How did you hear about us?', type: 'select', options: ['Social Media', 'Search Engine', 'Friend/Colleague', 'Advertisement'], required: true },
+      { id: 'ba2', label: 'When you think of [Industry], what brand comes to mind first?', type: 'text', required: true },
+      { id: 'ba3', label: 'Have you seen our ads recently?', type: 'radio', options: ['Yes', 'No', 'Not sure'], required: true }
+    ]
+  },
+  'employee-pulse': {
+    category: 'Polls & Surveys',
+    icon: 'monitor_heart',
+    color: 'bg-teal-500',
+    title: "Employee Pulse Check",
+    description: "Quick weekly check-in for team morale.",
+    collectEmails: false,
+    theme: { primaryColor: '#059669', backgroundColor: '#ecfdf5', textColor: '#064e3b', fontFamily: 'sans', borderRadius: 'lg' }, // Mint Fresh
+    fields: [
+      { id: 'ep1', label: 'How are you feeling this week?', type: 'radio', options: ['Great', 'Good', 'Okay', 'Stressed', 'Burnt out'], required: true },
+      { id: 'ep2', label: 'Do you have the resources you need?', type: 'radio', options: ['Yes', 'No'], required: true },
+      { id: 'ep3', label: 'Any blockers?', type: 'textarea', required: false }
+    ]
+  },
+  'event-voting': {
+    category: 'Polls & Surveys',
+    icon: 'how_to_vote',
+    color: 'bg-pink-500',
+    title: "Team Event Voting",
+    description: "Decide on the next team activity.",
+    collectEmails: true,
+    theme: { primaryColor: '#db2777', backgroundColor: '#fffde7', textColor: '#000000', fontFamily: 'mono', borderRadius: 'none' }, // Retro Pop
+    fields: [
+      { id: 'ev1', label: 'Vote for Activity', type: 'radio', options: ['Bowling', 'Karaoke', 'Escape Room', 'Dinner'], required: true },
+      { id: 'ev2', label: 'Preferred Day', type: 'checkbox', options: ['Thursday', 'Friday'], required: true },
+      { id: 'ev3', label: 'Dietary Restrictions', type: 'text', required: false }
+    ]
+  },
+  'market-research': {
+    category: 'Polls & Surveys',
+    icon: 'pie_chart',
+    color: 'bg-indigo-500',
+    title: "Market Research Survey",
+    description: "Gather insights on consumer preferences.",
+    collectEmails: false,
+    theme: { primaryColor: '#00b4d8', backgroundColor: '#caf0f8', textColor: '#03045e', fontFamily: 'sans', borderRadius: 'lg' }, // Arctic Frost
+    fields: [
+      { id: 'mr1', label: 'Age Group', type: 'select', options: ['18-24', '25-34', '35-44', '45-54', '55+'], required: true },
+      { id: 'mr2', label: 'How often do you shop online?', type: 'radio', options: ['Daily', 'Weekly', 'Monthly', 'Rarely'], required: true },
+      { id: 'mr3', label: 'What matters most to you?', type: 'checkbox', options: ['Price', 'Quality', 'Brand', 'Speed'], required: true }
+    ]
+  },
+  'website-feedback': {
+    category: 'Polls & Surveys',
+    icon: 'thumb_up',
+    color: 'bg-cyan-600',
+    title: "Website Feedback",
+    description: "Collect user feedback on your new site design.",
+    collectEmails: false,
+    theme: { primaryColor: '#00ff9d', backgroundColor: '#0a0a0a', textColor: '#e0e0e0', fontFamily: 'mono', borderRadius: 'none' }, // Cyberpunk
+    fields: [
+      { id: 'wf1', label: 'How easy was it to find what you were looking for?', type: 'rating', max: 5, required: true },
+      { id: 'wf2', label: 'What did you like most?', type: 'textarea', required: false },
+      { id: 'wf3', label: 'What could be improved?', type: 'textarea', required: false }
+    ]
+  },
+  'customer-satisfaction': {
+    category: 'Polls & Surveys',
+    icon: 'sentiment_satisfied',
+    color: 'bg-orange-500',
+    title: "Customer Satisfaction (CSAT)",
+    description: "Measure customer happiness after support interactions.",
+    collectEmails: true,
+    theme: { primaryColor: '#f43f5e', backgroundColor: '#fff7ed', textColor: '#431407', fontFamily: 'sans', borderRadius: 'xl' }, // Sunset Vibes
+    fields: [
+      { id: 'cs1', label: 'How would you rate the support you received?', type: 'rating', max: 5, required: true },
+      { id: 'cs2', label: 'Was your issue resolved?', type: 'radio', options: ['Yes', 'No'], required: true },
+      { id: 'cs3', label: 'Additional Comments', type: 'textarea', required: false }
+    ]
+  },
+
+
   // --- Church & Ministry ---
   'church-membership': {
     category: 'Church',
@@ -13,6 +209,7 @@ const TEMPLATES: Record<string, GeneratedForm & { category: string; icon: string
     title: "Church Membership Application",
     description: "Collect details from individuals wishing to join your church congregation.",
     collectEmails: true,
+    theme: { primaryColor: '#be185d', backgroundColor: '#fff1f2', textColor: '#4c0519', fontFamily: 'serif', borderRadius: 'sm' }, // Elegant Serif
     fields: [
       { id: 'cm1', label: 'Full Name', type: 'text', required: true },
       { id: 'cm2', label: 'Date of Birth', type: 'text', placeholder: 'MM/DD/YYYY', required: true },
@@ -30,6 +227,7 @@ const TEMPLATES: Record<string, GeneratedForm & { category: string; icon: string
     title: "Camp Meeting Registration",
     description: "Register campers for retreats or summer camps, including medical and emergency info.",
     collectEmails: true,
+    theme: { primaryColor: '#15803d', backgroundColor: '#f0fdf4', textColor: '#14532d', fontFamily: 'mono', borderRadius: 'none' }, // Forest Green
     fields: [
       { id: 'cr1', label: 'Camper Name', type: 'text', required: true },
       { id: 'cr2', label: 'Age', type: 'number', required: true },
@@ -41,7 +239,7 @@ const TEMPLATES: Record<string, GeneratedForm & { category: string; icon: string
     ]
   },
 
-  // --- Sales & Orders (20 Templates) ---
+  // --- Sales & Orders ---
   'product-order': {
     category: 'Sales',
     icon: 'shopping_cart',
@@ -49,6 +247,7 @@ const TEMPLATES: Record<string, GeneratedForm & { category: string; icon: string
     title: "Product Order Form",
     description: "Simple order form for customers to purchase products directly.",
     collectEmails: true,
+    theme: { primaryColor: '#0ea5e9', backgroundColor: '#f0f9ff', textColor: '#0f172a', fontFamily: 'sans', borderRadius: 'md' }, // Ocean Blue
     fields: [
       { id: 'po1', label: 'Customer Name', type: 'text', required: true },
       { id: 'po2', label: 'Shipping Address', type: 'textarea', required: true },
@@ -65,6 +264,7 @@ const TEMPLATES: Record<string, GeneratedForm & { category: string; icon: string
     title: "Wholesale Inquiry",
     description: "Capture leads for bulk purchasing or distribution partners.",
     collectEmails: true,
+    theme: { primaryColor: '#d97706', backgroundColor: '#fffbeb', textColor: '#451a03', fontFamily: 'serif', borderRadius: 'md' }, // Golden Hour
     fields: [
       { id: 'wi1', label: 'Company Name', type: 'text', required: true },
       { id: 'wi2', label: 'Contact Person', type: 'text', required: true },
@@ -74,21 +274,6 @@ const TEMPLATES: Record<string, GeneratedForm & { category: string; icon: string
       { id: 'wi6', label: 'Estimated Monthly Volume', type: 'select', options: ['$0 - $1,000', '$1,000 - $10,000', '$10,000+'], required: false }
     ]
   },
-  'sales-call-script': {
-    category: 'Sales',
-    icon: 'call',
-    color: 'bg-purple-600',
-    title: "Sales Call Script & Log",
-    description: "A form for sales reps to log call details and follow specific script points.",
-    collectEmails: false,
-    fields: [
-      { id: 'sc1', label: 'Lead Name', type: 'text', required: true },
-      { id: 'sc2', label: 'Call Outcome', type: 'select', options: ['Connected', 'Voicemail', 'Gatekeeper', 'Not Interested', 'Meeting Booked'], required: true },
-      { id: 'sc3', label: 'Pain Points Identified', type: 'checkbox', options: ['Budget', 'Timing', 'Features', 'Competitor'], required: false },
-      { id: 'sc4', label: 'Call Notes', type: 'textarea', required: true },
-      { id: 'sc5', label: 'Follow-up Date', type: 'date', required: false }
-    ]
-  },
   'quote-request': {
     category: 'Sales',
     icon: 'request_quote',
@@ -96,6 +281,7 @@ const TEMPLATES: Record<string, GeneratedForm & { category: string; icon: string
     title: "Customer Quote Request",
     description: "Allow potential clients to request pricing for specific services.",
     collectEmails: true,
+    theme: { primaryColor: '#334155', backgroundColor: '#f8fafc', textColor: '#0f172a', fontFamily: 'sans', borderRadius: 'sm' }, // Slate Corporate
     fields: [
       { id: 'qr1', label: 'Project Name', type: 'text', required: true },
       { id: 'qr2', label: 'Service Type', type: 'select', options: ['Consulting', 'Development', 'Design', 'Maintenance'], required: true },
@@ -112,6 +298,7 @@ const TEMPLATES: Record<string, GeneratedForm & { category: string; icon: string
     title: "Service Booking Form",
     description: "Schedule appointments or service calls.",
     collectEmails: true,
+    theme: { primaryColor: '#059669', backgroundColor: '#ecfdf5', textColor: '#064e3b', fontFamily: 'sans', borderRadius: 'lg' }, // Mint Fresh
     fields: [
       { id: 'sb1', label: 'Client Name', type: 'text', required: true },
       { id: 'sb2', label: 'Phone Number', type: 'phone', required: true },
@@ -121,36 +308,6 @@ const TEMPLATES: Record<string, GeneratedForm & { category: string; icon: string
       { id: 'sb6', label: 'Address', type: 'textarea', required: true }
     ]
   },
-  'product-feedback': {
-    category: 'Sales',
-    icon: 'thumbs_up_down',
-    color: 'bg-rose-500',
-    title: "Product Feedback Survey",
-    description: "Gather post-purchase feedback to improve sales offerings.",
-    collectEmails: true,
-    fields: [
-      { id: 'pf1', label: 'Product Purchased', type: 'text', required: true },
-      { id: 'pf2', label: 'Overall Satisfaction', type: 'radio', options: ['Very Satisfied', 'Satisfied', 'Neutral', 'Dissatisfied'], required: true },
-      { id: 'pf3', label: 'What did you like most?', type: 'textarea', required: false },
-      { id: 'pf4', label: 'How can we improve?', type: 'textarea', required: false },
-      { id: 'pf5', label: 'Would you recommend us?', type: 'radio', options: ['Yes', 'No'], required: true }
-    ]
-  },
-  'lead-qualification': {
-    category: 'Sales',
-    icon: 'filter_alt',
-    color: 'bg-cyan-600',
-    title: "Lead Qualification Form",
-    description: "Qualify incoming leads based on budget, authority, need, and timeline (BANT).",
-    collectEmails: true,
-    fields: [
-      { id: 'lq1', label: 'Company', type: 'text', required: true },
-      { id: 'lq2', label: 'Role', type: 'text', required: true },
-      { id: 'lq3', label: 'Timeline for Implementation', type: 'select', options: ['Immediate', '1-3 Months', '3-6 Months', '6+ Months'], required: true },
-      { id: 'lq4', label: 'Budget Status', type: 'radio', options: ['Approved', 'Pending Approval', 'Not Allocated'], required: true },
-      { id: 'lq5', label: 'Decision Making Process', type: 'textarea', required: false }
-    ]
-  },
   'demo-request': {
     category: 'Sales',
     icon: 'desktop_windows',
@@ -158,193 +315,13 @@ const TEMPLATES: Record<string, GeneratedForm & { category: string; icon: string
     title: "Software Demo Request",
     description: "Capture interest for product demonstrations.",
     collectEmails: true,
+    theme: { primaryColor: '#8b5cf6', backgroundColor: '#18181b', textColor: '#ffffff', fontFamily: 'sans', borderRadius: 'lg' }, // Dark Night
     fields: [
       { id: 'dr1', label: 'First Name', type: 'text', required: true },
       { id: 'dr2', label: 'Work Email', type: 'email', required: true },
       { id: 'dr3', label: 'Company URL', type: 'url', required: false },
       { id: 'dr4', label: 'Team Size', type: 'select', options: ['1-10', '11-50', '51-200', '201+'], required: true },
       { id: 'dr5', label: 'Primary Use Case', type: 'textarea', required: false }
-    ]
-  },
-  'affiliate-app': {
-    category: 'Sales',
-    icon: 'handshake',
-    color: 'bg-orange-600',
-    title: "Affiliate Application",
-    description: "Recruit partners to sell your products.",
-    collectEmails: true,
-    fields: [
-      { id: 'aa1', label: 'Applicant Name', type: 'text', required: true },
-      { id: 'aa2', label: 'Website / Blog URL', type: 'url', required: true },
-      { id: 'aa3', label: 'Social Media Handles', type: 'text', required: false },
-      { id: 'aa4', label: 'Promotion Method', type: 'checkbox', options: ['SEO', 'Paid Ads', 'Email List', 'Social Media'], required: true },
-      { id: 'aa5', label: 'Estimated Audience Size', type: 'select', options: ['<1k', '1k-10k', '10k-50k', '50k+'], required: true }
-    ]
-  },
-  'distributor-app': {
-    category: 'Sales',
-    icon: 'local_shipping',
-    color: 'bg-slate-600',
-    title: "Distributor Application",
-    description: "Vet potential distributors for your goods.",
-    collectEmails: true,
-    fields: [
-      { id: 'da1', label: 'Company Legal Name', type: 'text', required: true },
-      { id: 'da2', label: 'Years in Business', type: 'number', required: true },
-      { id: 'da3', label: 'Warehousing Capabilities', type: 'textarea', required: true },
-      { id: 'da4', label: 'Territory Covered', type: 'text', required: true },
-      { id: 'da5', label: 'Upload Business License', type: 'file', required: true }
-    ]
-  },
-  'presales-questionnaire': {
-    category: 'Sales',
-    icon: 'quiz',
-    color: 'bg-violet-600',
-    title: "Pre-Sales Questionnaire",
-    description: "Gather requirements before a sales meeting.",
-    collectEmails: true,
-    fields: [
-      { id: 'pq1', label: 'Current Solution Used', type: 'text', required: false },
-      { id: 'pq2', label: 'Top 3 Challenges', type: 'textarea', required: true },
-      { id: 'pq3', label: 'Number of Users', type: 'number', required: true },
-      { id: 'pq4', label: 'Key Integrations Needed', type: 'text', required: false },
-      { id: 'pq5', label: 'Success Criteria', type: 'textarea', required: false }
-    ]
-  },
-  'event-vendor': {
-    category: 'Sales',
-    icon: 'store',
-    color: 'bg-pink-600',
-    title: "Event Vendor Application",
-    description: "Sell booth space for trade shows or markets.",
-    collectEmails: true,
-    fields: [
-      { id: 'ev1', label: 'Business Name', type: 'text', required: true },
-      { id: 'ev2', label: 'Product Category', type: 'select', options: ['Food', 'Crafts', 'Apparel', 'Tech', 'Service'], required: true },
-      { id: 'ev3', label: 'Booth Size Needed', type: 'select', options: ['10x10', '10x20', '20x20'], required: true },
-      { id: 'ev4', label: 'Electricity Required?', type: 'radio', options: ['Yes', 'No'], required: true },
-      { id: 'ev5', label: 'Setup Date', type: 'date', required: true }
-    ]
-  },
-  'sponsorship-request': {
-    category: 'Sales',
-    icon: 'volunteer_activism',
-    color: 'bg-red-600',
-    title: "Sponsorship Request Form",
-    description: "Inbound requests for donations or sponsorships.",
-    collectEmails: true,
-    fields: [
-      { id: 'sr1', label: 'Organization Name', type: 'text', required: true },
-      { id: 'sr2', label: 'Event Name', type: 'text', required: true },
-      { id: 'sr3', label: 'Event Date', type: 'date', required: true },
-      { id: 'sr4', label: 'Sponsorship Level Requested', type: 'select', options: ['Bronze ($500)', 'Silver ($1000)', 'Gold ($5000)'], required: true },
-      { id: 'sr5', label: 'Audience Demographics', type: 'textarea', required: false }
-    ]
-  },
-  'custom-order': {
-    category: 'Sales',
-    icon: 'palette',
-    color: 'bg-fuchsia-600',
-    title: "Custom Order Request",
-    description: "For bespoke products like cakes, furniture, or art.",
-    collectEmails: true,
-    fields: [
-      { id: 'co1', label: 'Item Description', type: 'text', required: true },
-      { id: 'co2', label: 'Reference Image', type: 'image', required: false },
-      { id: 'co3', label: 'Dimensions/Size', type: 'text', required: true },
-      { id: 'co4', label: 'Specific Colors/Materials', type: 'textarea', required: false },
-      { id: 'co5', label: 'Budget Range', type: 'text', required: true },
-      { id: 'co6', label: 'Date Needed By', type: 'date', required: true }
-    ]
-  },
-  'returning-customer': {
-    category: 'Sales',
-    icon: 'history',
-    color: 'bg-lime-600',
-    title: "Returning Customer Fast Order",
-    description: "Simplified order form for repeat clients.",
-    collectEmails: true,
-    fields: [
-      { id: 'rc1', label: 'Account Number / Customer ID', type: 'text', required: true },
-      { id: 'rc2', label: 'Re-order Previous Items?', type: 'radio', options: ['Yes, exact same', 'Yes, but with changes', 'No, new order'], required: true },
-      { id: 'rc3', label: 'Items to Order', type: 'textarea', required: true },
-      { id: 'rc4', label: 'PO Number', type: 'text', required: false }
-    ]
-  },
-  'bulk-order': {
-    category: 'Sales',
-    icon: 'inventory_2',
-    color: 'bg-amber-700',
-    title: "Bulk Order Form",
-    description: "Order form optimized for large quantities.",
-    collectEmails: true,
-    fields: [
-      { id: 'bo1', label: 'Organization', type: 'text', required: true },
-      { id: 'bo2', label: 'Shipping Destination', type: 'select', options: ['Domestic', 'International'], required: true },
-      { id: 'bo3', label: 'SKU List (CSV Upload preferred)', type: 'file', required: false },
-      { id: 'bo4', label: 'Or List Items Here', type: 'textarea', placeholder: 'SKU, Qty\nSKU, Qty', required: false },
-      { id: 'bo5', label: 'Requested Delivery Date', type: 'date', required: true }
-    ]
-  },
-  'sales-report': {
-    category: 'Sales',
-    icon: 'assessment',
-    color: 'bg-sky-600',
-    title: "Sales Rep Daily Report",
-    description: "Internal form for sales teams to track activity.",
-    collectEmails: true,
-    fields: [
-      { id: 'rp1', label: 'Date', type: 'date', required: true },
-      { id: 'rp2', label: 'Calls Made', type: 'number', required: true },
-      { id: 'rp3', label: 'Emails Sent', type: 'number', required: true },
-      { id: 'rp4', label: 'Meetings Held', type: 'number', required: true },
-      { id: 'rp5', label: 'Deals Closed ($)', type: 'number', required: true },
-      { id: 'rp6', label: 'Key Blockers', type: 'textarea', required: false }
-    ]
-  },
-  'competitor-analysis': {
-    category: 'Sales',
-    icon: 'visibility',
-    color: 'bg-gray-600',
-    title: "Competitor Analysis Input",
-    description: "Field intelligence gathering form.",
-    collectEmails: true,
-    fields: [
-      { id: 'ca1', label: 'Competitor Name', type: 'text', required: true },
-      { id: 'ca2', label: 'Product/Service Analyzed', type: 'text', required: true },
-      { id: 'ca3', label: 'Pricing Observed', type: 'text', required: false },
-      { id: 'ca4', label: 'Strengths', type: 'textarea', required: true },
-      { id: 'ca5', label: 'Weaknesses', type: 'textarea', required: true },
-      { id: 'ca6', label: 'Customer Sentiment', type: 'select', options: ['Positive', 'Neutral', 'Negative'], required: false }
-    ]
-  },
-  'churn-survey': {
-    category: 'Sales',
-    icon: 'exit_to_app',
-    color: 'bg-red-500',
-    title: "Cancellation / Churn Survey",
-    description: "Understand why customers are leaving.",
-    collectEmails: true,
-    fields: [
-      { id: 'cs1', label: 'Reason for Cancellation', type: 'select', options: ['Too expensive', 'Missing features', 'Found better alternative', 'No longer needed', 'Poor support'], required: true },
-      { id: 'cs2', label: 'Which competitor did you choose?', type: 'text', required: false },
-      { id: 'cs3', label: 'What could we have done better?', type: 'textarea', required: true },
-      { id: 'cs4', label: 'How likely are you to return?', type: 'radio', options: ['Likely', 'Unlikely', 'Never'], required: true }
-    ]
-  },
-  'client-onboarding': {
-    category: 'Sales',
-    icon: 'flight_takeoff',
-    color: 'bg-emerald-500',
-    title: "New Client Onboarding",
-    description: "Collect initial assets and info after closing a sale.",
-    collectEmails: true,
-    fields: [
-      { id: 'no1', label: 'Primary Point of Contact', type: 'text', required: true },
-      { id: 'no2', label: 'Billing Contact Email', type: 'email', required: true },
-      { id: 'no3', label: 'Brand Guidelines / Logo Upload', type: 'file', required: false },
-      { id: 'no4', label: 'Access Credentials (if needed)', type: 'textarea', required: false },
-      { id: 'no5', label: 'Target Launch Date', type: 'date', required: true }
     ]
   },
 
@@ -356,6 +333,7 @@ const TEMPLATES: Record<string, GeneratedForm & { category: string; icon: string
     title: "Workshop Registration",
     description: "Sign up form for educational seminars or classes.",
     collectEmails: true,
+    theme: { primaryColor: '#0ea5e9', backgroundColor: '#f0f9ff', textColor: '#0f172a', fontFamily: 'sans', borderRadius: 'md' }, // Ocean Blue
     fields: [
       { id: 'wr1', label: 'Participant Name', type: 'text', required: true },
       { id: 'wr2', label: 'Institution/Organization', type: 'text', required: false },
@@ -370,6 +348,7 @@ const TEMPLATES: Record<string, GeneratedForm & { category: string; icon: string
     title: "Course Evaluation",
     description: "Feedback form for students to rate courses and instructors.",
     collectEmails: false,
+    theme: { primaryColor: '#78350f', backgroundColor: '#fff8f0', textColor: '#451a03', fontFamily: 'serif', borderRadius: 'sm' }, // Coffee House
     fields: [
       { id: 'ce1', label: 'Course Name', type: 'text', required: true },
       { id: 'ce2', label: 'Instructor Rating', type: 'radio', options: ['Excellent', 'Good', 'Average', 'Poor'], required: true },
@@ -378,7 +357,7 @@ const TEMPLATES: Record<string, GeneratedForm & { category: string; icon: string
     ]
   },
 
-  // --- Business & HR ---
+  // --- HR ---
   'job-application': {
     category: 'HR',
     icon: 'work',
@@ -386,6 +365,7 @@ const TEMPLATES: Record<string, GeneratedForm & { category: string; icon: string
     title: "Job Application",
     description: "Standard application form for open positions.",
     collectEmails: true,
+    theme: { primaryColor: '#334155', backgroundColor: '#f8fafc', textColor: '#0f172a', fontFamily: 'sans', borderRadius: 'sm' }, // Slate Corporate
     fields: [
       { id: 'ja1', label: 'Full Name', type: 'text', required: true },
       { id: 'ja2', label: 'LinkedIn Profile URL', type: 'url', required: false },
@@ -402,6 +382,7 @@ const TEMPLATES: Record<string, GeneratedForm & { category: string; icon: string
     title: "Employee Satisfaction Survey",
     description: "Anonymous internal survey for team feedback.",
     collectEmails: false,
+    theme: { primaryColor: '#f43f5e', backgroundColor: '#fff7ed', textColor: '#431407', fontFamily: 'sans', borderRadius: 'xl' }, // Sunset Vibes
     fields: [
       { id: 'es1', label: 'Department', type: 'select', options: ['Engineering', 'Sales', 'Marketing', 'Support'], required: true },
       { id: 'es2', label: 'How satisfied are you with your role?', type: 'radio', options: ['Very Satisfied', 'Satisfied', 'Neutral', 'Dissatisfied'], required: true },
@@ -418,6 +399,7 @@ const TEMPLATES: Record<string, GeneratedForm & { category: string; icon: string
     title: "Patient Intake Form",
     description: "New patient registration and medical history.",
     collectEmails: true,
+    theme: { primaryColor: '#059669', backgroundColor: '#ecfdf5', textColor: '#064e3b', fontFamily: 'sans', borderRadius: 'lg' }, // Mint Fresh
     fields: [
       { id: 'pi1', label: 'Patient Name', type: 'text', required: true },
       { id: 'pi2', label: 'Date of Birth', type: 'date', required: true },
@@ -494,6 +476,8 @@ const TemplatesPage: React.FC = () => {
                     <div className="absolute top-3 right-3 bg-black/30 backdrop-blur-sm text-white text-xs font-bold px-2 py-1 rounded uppercase tracking-wider">
                         {t.category}
                     </div>
+                    {/* Theme Preview Dot */}
+                    <div className="absolute bottom-3 right-3 size-4 rounded-full border border-white/20 shadow-sm" style={{ backgroundColor: t.theme?.primaryColor }}></div>
                 </div>
                 
                 <div className="p-6 flex flex-col gap-3 flex-1">
