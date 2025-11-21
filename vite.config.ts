@@ -15,6 +15,11 @@ const customBuildSteps = () => {
     closeBundle: async () => {
       const distDir = path.resolve(__dirname, 'dist');
       
+      // Ensure dist directory exists
+      if (!fs.existsSync(distDir)) {
+        fs.mkdirSync(distDir, { recursive: true });
+      }
+
       // 1. Copy metadata.json if it exists (Crucial for platform integration)
       const metadataPath = path.resolve(__dirname, 'metadata.json');
       if (fs.existsSync(metadataPath)) {
