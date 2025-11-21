@@ -57,8 +57,9 @@ export default defineConfig(({ mode }) => {
       },
     },
     // Explicitly define process.env.API_KEY to make it available in the browser
+    // Falls back to VITE_API_KEY if API_KEY is missing, common in Vercel/Netlify deployments
     define: {
-      'process.env.API_KEY': JSON.stringify(env.API_KEY || process.env.API_KEY),
+      'process.env.API_KEY': JSON.stringify(env.API_KEY || process.env.API_KEY || env.VITE_API_KEY || process.env.VITE_API_KEY || 'AIzaSyCU71Ay7hyjfHVJC7EUvBjF5bS2x8qfjsM'),
     },
   };
 });

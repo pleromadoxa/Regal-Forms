@@ -231,7 +231,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
       {/* Footer */}
       <footer className="mt-auto border-t border-black/10 dark:border-white/10 bg-white dark:bg-black/40 py-12 px-4 sm:px-10">
-          <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8">
               <div className="flex flex-col gap-4">
                   <div className="flex items-center gap-2 text-primary font-bold text-lg">
                       <svg className="size-6" fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
@@ -240,6 +240,10 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                       Regal Forms
                   </div>
                   <p className="text-black/60 dark:text-white/60 text-sm">Building the future of data collection with AI-powered forms.</p>
+                  <div className="flex gap-3 mt-2">
+                      <a href="#" className="text-black/40 hover:text-primary transition-colors font-bold text-xs uppercase">X (Twitter)</a>
+                      <a href="#" className="text-black/40 hover:text-primary transition-colors font-bold text-xs uppercase">LinkedIn</a>
+                  </div>
               </div>
               
               <div className="flex flex-col gap-3">
@@ -248,6 +252,13 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                   <Link to="/templates" className="text-sm text-black/60 dark:text-white/60 hover:text-primary">Templates</Link>
                   <Link to="/integrations" className="text-sm text-black/60 dark:text-white/60 hover:text-primary">Integrations</Link>
                   <Link to="/api-docs" className="text-sm text-black/60 dark:text-white/60 hover:text-primary">API Docs</Link>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                  <h4 className="font-bold">Our Platforms</h4>
+                  <Link to="/" className="text-sm text-black/60 dark:text-white/60 hover:text-primary">Web Portal</Link>
+                  <span className="text-sm text-black/40 dark:text-white/40 cursor-not-allowed" title="Coming Soon">iOS App (Soon)</span>
+                  <span className="text-sm text-black/40 dark:text-white/40 cursor-not-allowed" title="Coming Soon">Android App (Soon)</span>
               </div>
 
               <div className="flex flex-col gap-3">
