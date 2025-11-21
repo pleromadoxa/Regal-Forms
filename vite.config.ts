@@ -1,4 +1,5 @@
-import { defineConfig } from 'vite';
+
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import fs from 'fs';
 import path from 'path';
@@ -27,18 +28,28 @@ const customBuildSteps = () => {
   }
 }
 
-export default defineConfig({
-  plugins: [react(), customBuildSteps()],
-  base: './', // Ensures assets are linked relatively (helps with sub-path deployment)
-  build: {
-    outDir: 'dist',
-    assetsDir: 'assets',
-    emptyOutDir: true,
-    sourcemap: false,
-  },
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './'),
+export default defineConfig(({ mode }) => {
+  // Load env file based on `mode` in the current working directory.
+  // Using path.resolve('.') as a safe alternative to process.cwd() to avoid type issues
+  const env = loadEnv(mode, path.resolve('.'), '');
+
+  return {
+    plugins: [react(), customBuildSteps()],
+    base: './', // Ensures assets are linked relatively (helps with sub-path deployment)
+    build: {
+      outDir: 'dist',
+      assetsDir: 'assets',
+      emptyOutDir: true,
+      sourcemap: false,
     },
-  },
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, './'),
+      },
+    },
+    // Explicitly define process.env.API_KEY to make it available in the browser
+    define: {
+      'process.env.API_KEY': JSON.stringify(env.API_KEY || process.env.API_KEY),
+    },
+  };
 });

@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { collection, query, where, onSnapshot, orderBy, limit, doc, writeBatch, updateDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, writeBatch, updateDoc } from 'firebase/firestore';
 import { db } from '../services/firebase';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -17,11 +17,11 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   useEffect(() => {
       if (!currentUser) return;
 
+      // Note: We fetch all notifications for the user and sort/limit client-side
+      // to avoid the need for a manual composite index in Firestore (orderBy + where).
       const q = query(
           collection(db, 'notifications'),
-          where('userId', '==', currentUser.uid),
-          orderBy('timestamp', 'desc'),
-          limit(20)
+          where('userId', '==', currentUser.uid)
       );
 
       const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -29,7 +29,16 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               id: doc.id,
               ...doc.data()
           }));
-          setNotifications(notes);
+          
+          // Client-side sort: Newest first
+          notes.sort((a: any, b: any) => {
+              const timeA = a.timestamp?.seconds || 0;
+              const timeB = b.timestamp?.seconds || 0;
+              return timeB - timeA;
+          });
+
+          // Client-side limit: Take top 20
+          setNotifications(notes.slice(0, 20));
       }, (error) => {
           console.error("Notification listener error:", error);
       });
