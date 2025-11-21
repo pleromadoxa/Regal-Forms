@@ -481,6 +481,9 @@ const BuilderPage: React.FC = () => {
           
           await setDoc(docRef, payload, { merge: true });
           
+          // Update local state to reflect saved status
+          setForm(prev => prev ? ({ ...prev, status: targetStatus, slug: finalSlug }) : null);
+          
           if (targetStatus === 'draft') {
               setDraftSaved(true);
               setTimeout(() => setDraftSaved(false), 2000);

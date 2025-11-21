@@ -82,6 +82,7 @@ export interface GeneratedForm {
 
   fields: FormField[];
   stats?: FormStats;
+  status?: 'draft' | 'published' | 'completed';
 }
 
 export enum GenerationStatus {

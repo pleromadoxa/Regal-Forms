@@ -357,7 +357,7 @@ const HELP_ARTICLES: Record<string, Article[]> = {
                  <div className="space-y-4">
                     <p>We're sorry to see you go. To cancel your subscription:</p>
                     <ol className="list-decimal pl-5 space-y-2">
-                        <li>Go to Profile Settings > Billing.</li>
+                        <li>Go to Profile Settings &gt; Billing.</li>
                         <li>Click on "Manage Subscription".</li>
                         <li>Select "Cancel Plan".</li>
                     </ol>
