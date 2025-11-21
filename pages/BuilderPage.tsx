@@ -500,8 +500,9 @@ const BuilderPage: React.FC = () => {
   return (
     <div className="flex flex-col h-screen w-full bg-background-light dark:bg-background-dark text-black dark:text-white overflow-hidden font-display">
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 bg-white dark:bg-black/40 border-b border-black/10 dark:border-white/10 shrink-0 z-20">
-        <div className="flex items-center gap-4">
+      <header className="relative flex items-center justify-between px-4 py-3 bg-white dark:bg-black/40 border-b border-black/10 dark:border-white/10 shrink-0 z-20">
+        {/* Left Side */}
+        <div className="flex items-center gap-4 z-10">
             <button onClick={() => navigate('/dashboard')} className="flex items-center gap-1 text-sm font-bold hover:opacity-70">
                <span className="material-symbols-outlined">arrow_back</span> Back
             </button>
@@ -511,28 +512,33 @@ const BuilderPage: React.FC = () => {
                 {draftSaved && <span className="text-xs text-green-500 animate-fade-in">Saved</span>}
             </div>
         </div>
-        <div className="flex items-center gap-3">
-             <div className="hidden sm:flex bg-black/5 dark:bg-white/5 p-1 rounded-lg">
+
+        {/* Center Tabs - Absolute positioning */}
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-0">
+             <div className="hidden sm:flex bg-black/5 dark:bg-white/5 p-1 rounded-lg shadow-sm border border-black/5 dark:border-white/5">
                  <button 
                     onClick={() => setActiveTab('ai')}
-                    className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all flex items-center gap-1 ${activeTab === 'ai' ? 'bg-white dark:bg-white/10 shadow-sm text-primary' : 'hover:bg-white/50 dark:hover:bg-white/5'}`}
+                    className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all flex items-center gap-1.5 ${activeTab === 'ai' ? 'bg-white dark:bg-white/10 shadow-sm text-primary' : 'hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60'}`}
                  >
                     <span className="material-symbols-outlined text-sm">auto_awesome</span> AI
                  </button>
                  <button 
                     onClick={() => setActiveTab('tools')}
-                    className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all flex items-center gap-1 ${activeTab === 'tools' ? 'bg-white dark:bg-white/10 shadow-sm text-primary' : 'hover:bg-white/50 dark:hover:bg-white/5'}`}
+                    className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all flex items-center gap-1.5 ${activeTab === 'tools' ? 'bg-white dark:bg-white/10 shadow-sm text-primary' : 'hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60'}`}
                  >
                     <span className="material-symbols-outlined text-sm">build</span> Fields
                  </button>
                  <button 
                     onClick={() => setActiveTab('design')}
-                    className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all flex items-center gap-1 ${activeTab === 'design' ? 'bg-white dark:bg-white/10 shadow-sm text-primary' : 'hover:bg-white/50 dark:hover:bg-white/5'}`}
+                    className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all flex items-center gap-1.5 ${activeTab === 'design' ? 'bg-white dark:bg-white/10 shadow-sm text-primary' : 'hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60'}`}
                  >
                     <span className="material-symbols-outlined text-sm">palette</span> Design
                  </button>
              </div>
-             
+        </div>
+
+        {/* Right Side */}
+        <div className="flex items-center gap-3 z-10">
              {form?.status === 'published' && (
                  <button onClick={() => setShowShareModal(true)} className="hidden sm:flex items-center gap-2 px-3 py-2 text-sm font-bold bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors">
                      <span className="material-symbols-outlined text-base">share</span>
@@ -816,10 +822,15 @@ const BuilderPage: React.FC = () => {
                           </div>
                       )}
                       
-                      <div className="mt-8 pt-8 border-t opacity-30 text-center text-sm font-bold">
-                          <button className="px-8 py-3 bg-current text-white dark:text-black rounded-lg pointer-events-none opacity-50">
+                      {/* Submit Button Area */}
+                      <div 
+                        className={`mt-8 pt-6 border-t border-current/10 text-center transition-all duration-200 cursor-pointer rounded-lg p-4 ${selectedId === 'form-settings' ? 'ring-2 ring-primary bg-primary/5' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
+                        onClick={(e) => { e.stopPropagation(); setSelectedId('form-settings'); }}
+                      >
+                          <button className="px-8 py-3 bg-current text-white dark:text-black rounded-lg font-bold opacity-90 pointer-events-none shadow-sm">
                               {form?.submitButtonText || 'Submit'}
                           </button>
+                          <p className="text-xs opacity-50 mt-2 font-medium">Click to edit submit button text</p>
                       </div>
                   </div>
               </div>

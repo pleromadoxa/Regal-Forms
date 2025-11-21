@@ -57,8 +57,10 @@ const SubmissionsPage: React.FC = () => {
   // Modal States
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
 
   // Fetch User Forms
   const fetchForms = async () => {
@@ -145,6 +147,7 @@ const SubmissionsPage: React.FC = () => {
   }, [selectedFormId, viewMode]);
 
   const selectedForm = forms.find(f => f.id === selectedFormId);
+  const shareUrl = selectedForm ? `https://www.regalforms.xyz/#/form/${selectedForm.slug || selectedForm.id}` : '';
 
   const handleDraftClick = (form: FormOverview) => {
       navigate('/create', { 
@@ -172,14 +175,7 @@ const SubmissionsPage: React.FC = () => {
 
   const handleShare = () => {
       if (!selectedForm) return;
-      // Use the explicit domain as requested by the user
-      const url = `https://www.regalforms.xyz/#/form/${selectedForm.slug || selectedForm.id}`;
-      navigator.clipboard.writeText(url).then(() => {
-          alert("Link copied to clipboard!");
-      }).catch(err => {
-          console.error("Failed to copy:", err);
-          alert("Failed to copy link. Please manually copy: " + url);
-      });
+      setShowShareModal(true);
   };
 
   const handleDeleteForm = async () => {
@@ -456,6 +452,67 @@ const SubmissionsPage: React.FC = () => {
             )
         )}
       </div>
+
+      {/* Share Modal */}
+      {showShareModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
+              <div className="bg-white dark:bg-[#1e1e1e] rounded-xl shadow-2xl max-w-md w-full p-6 border border-black/10 dark:border-white/10">
+                  <div className="flex justify-between items-center mb-6">
+                      <h3 className="text-xl font-black">Share Form</h3>
+                      <button onClick={() => setShowShareModal(false)}><span className="material-symbols-outlined">close</span></button>
+                  </div>
+                  
+                  <div className="flex flex-col gap-4">
+                      <div>
+                          <label className="text-xs font-bold opacity-70 mb-1 block">Public Link</label>
+                          <div className="flex gap-2">
+                              <input 
+                                  type="text" 
+                                  readOnly 
+                                  value={shareUrl} 
+                                  className="flex-1 p-3 rounded-lg border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 text-sm font-mono"
+                              />
+                              <button 
+                                  onClick={() => {
+                                      navigator.clipboard.writeText(shareUrl);
+                                      setCopySuccess(true);
+                                      setTimeout(() => setCopySuccess(false), 2000);
+                                  }}
+                                  className="px-4 bg-primary text-white rounded-lg font-bold text-sm hover:bg-orange-600 transition-colors flex items-center gap-2"
+                              >
+                                  {copySuccess ? <span className="material-symbols-outlined text-lg">check</span> : <span className="material-symbols-outlined text-lg">content_copy</span>}
+                              </button>
+                          </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 mt-2">
+                          <a 
+                              href={`https://twitter.com/intent/tweet?text=Check out this form I built with Regal Forms!&url=${encodeURIComponent(shareUrl)}`}
+                              target="_blank"
+                              rel="noreferrer" 
+                              className="flex items-center justify-center gap-2 py-2.5 rounded-lg bg-black text-white hover:opacity-80 transition-opacity text-sm font-bold"
+                          >
+                              <svg className="size-4 fill-current" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                              Post to X
+                          </a>
+                          <a 
+                              href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`}
+                              target="_blank"
+                              rel="noreferrer" 
+                              className="flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[#0077b5] text-white hover:opacity-80 transition-opacity text-sm font-bold"
+                          >
+                              <svg className="size-4 fill-current" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                              LinkedIn
+                          </a>
+                      </div>
+                      
+                      <div className="pt-4 border-t border-black/10 dark:border-white/10 text-center">
+                           <button onClick={() => setShowShareModal(false)} className="text-sm font-bold hover:underline opacity-60">Close</button>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      )}
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
