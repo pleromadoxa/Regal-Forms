@@ -211,8 +211,23 @@ const FormPublicPage: React.FC = () => {
               'stats.responses': increment(1)
           });
 
-          // Trigger Integrations (Zapier)
+          // Create Notification for Form Owner
           if (formOwnerId) {
+              try {
+                  await addDoc(collection(db, 'notifications'), {
+                      userId: formOwnerId,
+                      type: 'submission',
+                      title: 'New Submission',
+                      message: `You received a new response for "${form.title}"`,
+                      timestamp: serverTimestamp(),
+                      read: false,
+                      link: '/submissions'
+                  });
+              } catch (noteError) {
+                  console.error("Failed to create notification", noteError);
+              }
+
+              // Trigger Integrations (Zapier)
               const triggerIntegrations = async () => {
                   try {
                       const userIntegrationsRef = doc(db, 'user_integrations', formOwnerId);

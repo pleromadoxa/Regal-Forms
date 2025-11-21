@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { updateProfile, updatePassword, deleteUser } from 'firebase/auth';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { collection, query, where, getDocs, doc, deleteDoc, getDoc } from 'firebase/firestore';
 import { storage, db } from '../services/firebase';
 import { useNavigate } from 'react-router-dom';
@@ -51,9 +51,18 @@ const ProfileSettingsPage: React.FC = () => {
           }
 
           setIsProfileSaving(true);
+          setProfileMsg(null); // Clear previous messages
+
           try {
               const storageRef = ref(storage, `profile_images/${currentUser.uid}/${Date.now()}_${file.name}`);
-              const snapshot = await uploadBytes(storageRef, file);
+              
+              // Add metadata for better handling
+              const metadata = {
+                  contentType: file.type,
+              };
+
+              // Use uploadBytesResumable for better reliability
+              const snapshot = await uploadBytesResumable(storageRef, file, metadata);
               const downloadURL = await getDownloadURL(snapshot.ref);
               
               setPhotoURL(downloadURL);
@@ -62,7 +71,17 @@ const ProfileSettingsPage: React.FC = () => {
               setProfileMsg({ type: 'success', text: 'Profile picture updated.' });
           } catch (error: any) {
               console.error("Upload failed", error);
-              setProfileMsg({ type: 'error', text: 'Failed to upload image. ' + error.message });
+              let errorText = 'Failed to upload image.';
+              
+              if (error.code === 'storage/retry-limit-exceeded') {
+                  errorText = 'Upload timed out. Please check your internet connection.';
+              } else if (error.code === 'storage/unauthorized') {
+                  errorText = 'You do not have permission to upload.';
+              } else if (error.message) {
+                  errorText = error.message;
+              }
+              
+              setProfileMsg({ type: 'error', text: errorText });
           } finally {
               setIsProfileSaving(false);
           }

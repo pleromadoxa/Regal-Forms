@@ -19,6 +19,10 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const storage = getStorage(app);
 
+// Increase max upload retry time to prevent "Max retry time for operation exceeded" errors
+// on slow connections or large files.
+storage.maxUploadRetryTime = 600000; // 10 minutes
+
 // Initialize Firestore with settings to ignore undefined properties
 const db = initializeFirestore(app, {
   ignoreUndefinedProperties: true

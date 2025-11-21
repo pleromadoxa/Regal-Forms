@@ -288,7 +288,7 @@ const AdminDashboard: React.FC = () => {
                             <h3 className="text-xl font-bold mb-4">Top Locations</h3>
                             <div className="flex flex-col gap-3">
                                 {Object.entries(countryStats)
-                                    .sort(([,a], [,b]) => b - a)
+                                    .sort((a: [string, number], b: [string, number]) => b[1] - a[1])
                                     .map(([code, count], i) => (
                                     <div key={code} className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/5">
                                         <div className="flex items-center gap-3">

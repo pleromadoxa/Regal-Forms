@@ -7,7 +7,7 @@ import {
   signInWithPopup, 
   updateProfile 
 } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, getDoc, collection, addDoc } from 'firebase/firestore';
 import { auth, googleProvider, db } from '../services/firebase';
 
 interface SignUpPageProps {
@@ -62,6 +62,21 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ isLogin = false }) => {
               userData.createdAt = serverTimestamp();
 
               await setDoc(userRef, userData);
+
+              // Send Welcome Notification
+              try {
+                  await addDoc(collection(db, 'notifications'), {
+                      userId: user.uid,
+                      type: 'system',
+                      title: 'Welcome to Regal Forms! 🚀',
+                      message: 'We are excited to have you on board. Start by creating your first form using our AI builder.',
+                      timestamp: serverTimestamp(),
+                      read: false,
+                      link: '/create'
+                  });
+              } catch (noteError) {
+                  console.error("Error creating welcome notification:", noteError);
+              }
           }
       } catch (e: any) {
           console.error("Error saving user to DB:", e);
