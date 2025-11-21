@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { generateFormSchema, generateOptionsForField, optimizeFieldLabel } from '../services/geminiService';
 import { FormField, GeneratedForm, GenerationStatus, FormTheme, LogicRule } from '../types';
 import { collection, doc, serverTimestamp, setDoc } from 'firebase/firestore';
@@ -77,6 +77,87 @@ const THEME_PRESETS: { name: string; theme: FormTheme }[] = [
         name: "Midnight Ruby",
         theme: { primaryColor: '#ef4444', backgroundColor: '#280505', textColor: '#fee2e2', fontFamily: 'serif', borderRadius: 'md' }
     },
+    // New Themes
+    {
+        name: "Solar Flare",
+        theme: { primaryColor: '#f59e0b', backgroundColor: '#1c1917', textColor: '#fef3c7', fontFamily: 'sans', borderRadius: 'lg' }
+    },
+    {
+        name: "Minty Fresh",
+        theme: { primaryColor: '#10b981', backgroundColor: '#ecfdf5', textColor: '#064e3b', fontFamily: 'sans', borderRadius: 'xl' }
+    },
+    {
+        name: "Royal Velvet",
+        theme: { primaryColor: '#fbbf24', backgroundColor: '#4c1d95', textColor: '#fffbeb', fontFamily: 'serif', borderRadius: 'md' }
+    },
+    {
+        name: "Steel Gray",
+        theme: { primaryColor: '#475569', backgroundColor: '#e2e8f0', textColor: '#1e293b', fontFamily: 'mono', borderRadius: 'sm' }
+    },
+    {
+        name: "Cherry Blossom",
+        theme: { primaryColor: '#ec4899', backgroundColor: '#fdf2f8', textColor: '#831843', fontFamily: 'serif', borderRadius: 'full' }
+    },
+    {
+        name: "Deep Ocean",
+        theme: { primaryColor: '#22d3ee', backgroundColor: '#0c4a6e', textColor: '#f0f9ff', fontFamily: 'sans', borderRadius: 'lg' }
+    },
+    {
+        name: "Desert Sand",
+        theme: { primaryColor: '#d97706', backgroundColor: '#fffbeb', textColor: '#78350f', fontFamily: 'sans', borderRadius: 'md' }
+    },
+    {
+        name: "Neon Lights",
+        theme: { primaryColor: '#d946ef', backgroundColor: '#000000', textColor: '#e879f9', fontFamily: 'mono', borderRadius: 'none' }
+    },
+    {
+        name: "Minimalist White",
+        theme: { primaryColor: '#171717', backgroundColor: '#ffffff', textColor: '#171717', fontFamily: 'sans', borderRadius: 'none' }
+    },
+    {
+        name: "Retro Pop",
+        theme: { primaryColor: '#3b82f6', backgroundColor: '#fef08a', textColor: '#1e3a8a', fontFamily: 'sans', borderRadius: 'xl' }
+    },
+    {
+        name: "Autumn Leaves",
+        theme: { primaryColor: '#ea580c', backgroundColor: '#fff7ed', textColor: '#431407', fontFamily: 'serif', borderRadius: 'lg' }
+    },
+    {
+        name: "Arctic Ice",
+        theme: { primaryColor: '#0ea5e9', backgroundColor: '#f0f9ff', textColor: '#0c4a6e', fontFamily: 'sans', borderRadius: 'md' }
+    },
+    {
+        name: "Charcoal & Gold",
+        theme: { primaryColor: '#eab308', backgroundColor: '#1f2937', textColor: '#f3f4f6', fontFamily: 'serif', borderRadius: 'sm' }
+    },
+    {
+        name: "Berry Blast",
+        theme: { primaryColor: '#db2777', backgroundColor: '#fce7f3', textColor: '#831843', fontFamily: 'sans', borderRadius: 'xl' }
+    },
+    {
+        name: "Coffee House",
+        theme: { primaryColor: '#78350f', backgroundColor: '#fff8f0', textColor: '#451a03', fontFamily: 'serif', borderRadius: 'md' }
+    },
+    {
+        name: "Vibrant Teal",
+        theme: { primaryColor: '#14b8a6', backgroundColor: '#ccfbf1', textColor: '#134e4a', fontFamily: 'sans', borderRadius: 'full' }
+    },
+    {
+        name: "Classic Mono",
+        theme: { primaryColor: '#000000', backgroundColor: '#ffffff', textColor: '#000000', fontFamily: 'mono', borderRadius: 'none' }
+    },
+    {
+        name: "Soft Pastel",
+        theme: { primaryColor: '#8b5cf6', backgroundColor: '#f5f3ff', textColor: '#4c1d95', fontFamily: 'sans', borderRadius: 'lg' }
+    },
+    {
+        name: "High Contrast",
+        theme: { primaryColor: '#facc15', backgroundColor: '#000000', textColor: '#ffffff', fontFamily: 'sans', borderRadius: 'md' }
+    },
+    {
+        name: "Nature Walk",
+        theme: { primaryColor: '#65a30d', backgroundColor: '#f7fee7', textColor: '#365314', fontFamily: 'sans', borderRadius: 'xl' }
+    }
 ];
 
 const BuilderPage: React.FC = () => {
@@ -105,6 +186,7 @@ const BuilderPage: React.FC = () => {
   const [aiToolLoading, setAiToolLoading] = useState(false);
   const [uploadingAsset, setUploadingAsset] = useState<'logo' | 'cover' | null>(null);
 
+  // Refs for file inputs
   const logoInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
@@ -113,13 +195,21 @@ const BuilderPage: React.FC = () => {
 
   // Init from location state or localStorage
   useEffect(() => {
-      if (location.state && location.state.formData) {
+      if (location.state?.formData) {
           setForm(location.state.formData);
           if (location.state.formId) {
             setFormId(location.state.formId);
             setCustomSlug(location.state.formData.slug || location.state.formId);
           }
           if(location.state.formData.fields.length > 0) {
+              setActiveTab('tools');
+          }
+      } else if (location.state?.template) {
+          // Init from Template - Deep clone to avoid reference issues
+          const templateData = JSON.parse(JSON.stringify(location.state.template));
+          setForm(templateData);
+          setFormId(null); // Reset ID so it saves as a new form
+          if (templateData.fields && templateData.fields.length > 0) {
               setActiveTab('tools');
           }
       } else {
@@ -141,7 +231,7 @@ const BuilderPage: React.FC = () => {
               initFormIfNeeded();
           }
       }
-  }, []); // Run once on mount
+  }, [location.state]); // Ensure it runs when location state changes (e.g. navigating from templates)
 
   // Auto-save draft to localStorage
   useEffect(() => {
@@ -513,6 +603,9 @@ const BuilderPage: React.FC = () => {
                               </div>
                           ))}
                       </div>
+                      <button onClick={clearAllFields} className="mt-6 w-full py-2 text-xs font-bold text-red-500 border border-red-500/20 rounded-lg hover:bg-red-500/10 transition-colors">
+                          Clear All Fields
+                      </button>
                   </div>
               )}
 
@@ -633,237 +726,466 @@ const BuilderPage: React.FC = () => {
 
                                   {field.type === 'textarea' && <div className="h-24 w-full border border-current rounded opacity-30 bg-black/5"></div>}
                                   {field.type === 'select' && <div className="h-10 w-full border border-current rounded opacity-30 bg-black/5 flex items-center justify-between px-3"><span className="text-xs">Dropdown</span><span className="material-symbols-outlined text-sm">arrow_drop_down</span></div>}
-                                  {['radio', 'checkbox'].includes(field.type) && (
-                                      <div className="flex flex-col gap-2">
-                                          {field.options?.slice(0, 3).map((o, i) => (
-                                              <div key={i} className="flex items-center gap-2"><div className={`size-4 border border-current ${field.type === 'radio' ? 'rounded-full' : 'rounded'}`}></div><span className="text-sm">{o}</span></div>
+                                  
+                                  {(field.type === 'radio' || field.type === 'checkbox') && (
+                                    <div className="flex flex-col gap-2">
+                                        {field.options?.map((opt, i) => (
+                                            <div key={i} className="flex items-center gap-2">
+                                                <div className={`size-4 border border-current opacity-50 ${field.type === 'radio' ? 'rounded-full' : 'rounded'}`}></div>
+                                                <span className="text-sm opacity-80">{opt}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                  )}
+
+                                  {['date', 'time'].includes(field.type) && (
+                                      <div className="h-10 w-full border border-current rounded opacity-30 bg-black/5 flex items-center justify-between px-3">
+                                          <span className="text-sm">{field.placeholder || (field.type === 'date' ? 'Select Date' : 'Select Time')}</span>
+                                          <span className="material-symbols-outlined text-sm">{field.type === 'date' ? 'calendar_today' : 'schedule'}</span>
+                                      </div>
+                                  )}
+                                  
+                                  {['file', 'image'].includes(field.type) && (
+                                      <div className="h-20 w-full border-2 border-dashed border-current rounded opacity-30 bg-black/5 flex flex-col items-center justify-center">
+                                          <span className="material-symbols-outlined">cloud_upload</span>
+                                          <span className="text-xs">Upload {field.type === 'image' ? 'Image' : 'File'}</span>
+                                      </div>
+                                  )}
+
+                                  {field.type === 'rating' && (
+                                      <div className="flex gap-1">
+                                          {[...Array(5)].map((_, i) => (
+                                              <span key={i} className="material-symbols-outlined opacity-30">star</span>
                                           ))}
                                       </div>
                                   )}
-                                  {field.helperText && <p className="text-[10px] mt-1 opacity-70">{field.helperText}</p>}
+
+                                  {field.type === 'slider' && (
+                                      <div className="flex items-center gap-3">
+                                          <span className="text-xs opacity-50">{field.min || 0}</span>
+                                          <div className="h-1 flex-1 bg-current opacity-30 rounded-full relative">
+                                              <div className="absolute left-1/2 top-1/2 -translate-y-1/2 size-3 bg-current rounded-full"></div>
+                                          </div>
+                                          <span className="text-xs opacity-50">{field.max || 100}</span>
+                                      </div>
+                                  )}
+                                  
+                                  {field.type === 'product' && (
+                                      <div className="p-3 border border-current rounded-lg flex items-center gap-4 opacity-60">
+                                          <div className="size-12 bg-black/10 rounded flex items-center justify-center"><span className="material-symbols-outlined">shopping_bag</span></div>
+                                          <div className="flex-1">
+                                              <div className="h-3 w-20 bg-black/20 rounded mb-1"></div>
+                                              <div className="h-2 w-32 bg-black/10 rounded"></div>
+                                          </div>
+                                          <div className="font-bold">{field.price} {field.currency}</div>
+                                      </div>
+                                  )}
+                                  
+                                  {field.type === 'html' && (
+                                    <div className="w-full opacity-80" dangerouslySetInnerHTML={{ __html: field.content || '<p>HTML Content</p>' }} />
+                                  )}
+                                  
+                                  {field.type === 'quote' && (
+                                    <div className="border-l-4 border-current pl-4 italic opacity-80">
+                                        "{field.content}"
+                                        <div className="text-xs font-bold mt-1 opacity-60">- {field.author}</div>
+                                    </div>
+                                  )}
+                                  
+                                  {field.type === 'countdown' && (
+                                      <div className="flex gap-4 justify-center p-4 bg-black/5 rounded-lg opacity-80">
+                                          <div className="text-center"><span className="text-xl font-bold">00</span><div className="text-[10px] uppercase">Days</div></div>
+                                          <div className="text-center"><span className="text-xl font-bold">00</span><div className="text-[10px] uppercase">Hours</div></div>
+                                          <div className="text-center"><span className="text-xl font-bold">00</span><div className="text-[10px] uppercase">Mins</div></div>
+                                      </div>
+                                  )}
+
+                                  {field.type === 'youtube' && (
+                                      <div className="aspect-video w-full bg-black rounded flex items-center justify-center opacity-60 text-white">
+                                          <span className="material-symbols-outlined text-4xl">play_circle</span>
+                                      </div>
+                                  )}
                               </div>
                           </div>
                       ))}
 
-                      {(!form?.fields || form.fields.length === 0) && (
-                          <div className="border-2 border-dashed border-black/10 dark:border-white/10 rounded-xl p-10 text-center flex flex-col items-center justify-center text-black/40 dark:text-white/40">
+                      {(!form || form.fields.length === 0) && (
+                          <div className="flex flex-col items-center justify-center h-64 opacity-30 border-2 border-dashed border-current rounded-xl">
                               <span className="material-symbols-outlined text-4xl mb-2">drag_indicator</span>
-                              <p className="font-bold">Drag & Drop fields here</p>
+                              <p className="font-bold">Drag and drop fields here</p>
                           </div>
                       )}
-
-                      <div className="mt-6 pt-6 border-t" style={{ borderColor: `${currentTheme.textColor}20` }}>
-                          <button className="w-full py-4 font-bold text-lg rounded shadow-lg opacity-50 cursor-not-allowed" style={{ backgroundColor: currentTheme.primaryColor, color: '#fff', borderRadius: getBorderRadiusPx(currentTheme.borderRadius) }}>
+                      
+                      <div className="mt-8 pt-8 border-t opacity-30 text-center text-sm font-bold">
+                          <button className="px-8 py-3 bg-current text-white dark:text-black rounded-lg pointer-events-none opacity-50">
                               {form?.submitButtonText || 'Submit'}
                           </button>
                       </div>
                   </div>
               </div>
-          </main>
 
-          {/* Right Properties Panel */}
-          {selectedId && (
-              <aside className="w-[320px] bg-white dark:bg-[#1e1e1e] border-l border-black/10 dark:border-white/10 flex flex-col overflow-y-auto shrink-0 z-10 animate-slide-in">
-                  <div className="p-4 border-b border-black/10 dark:border-white/10 flex justify-between items-center bg-black/5 dark:bg-white/5">
-                      <h3 className="font-bold text-sm uppercase tracking-wider">Properties</h3>
-                      <button onClick={() => setSelectedId(null)}><span className="material-symbols-outlined text-lg">close</span></button>
+              {/* Properties Panel (Right Side - only visible if selected) */}
+              {selectedId && selectedId !== 'form-settings' && selectedField && (
+                  <div className="fixed right-0 top-[65px] bottom-0 w-80 bg-white dark:bg-[#1e1e1e] border-l border-black/10 dark:border-white/10 p-4 overflow-y-auto z-20 animate-fade-in shadow-2xl">
+                      <div className="flex items-center justify-between mb-6">
+                          <h3 className="font-bold">Field Properties</h3>
+                          <button onClick={() => setSelectedId(null)}><span className="material-symbols-outlined">close</span></button>
+                      </div>
+                      <div className="flex flex-col gap-4">
+                          <div>
+                              <label className="text-xs font-bold opacity-70">Label</label>
+                              <div className="flex gap-2">
+                                <input 
+                                    type="text" 
+                                    value={selectedField.label} 
+                                    onChange={(e) => updateField(selectedField.id, { label: e.target.value })}
+                                    className="w-full p-2 rounded border border-black/10 dark:border-white/10 bg-transparent text-sm"
+                                />
+                                <button 
+                                    onClick={() => handleAiOptimizeLabel(selectedField.id, selectedField.label)}
+                                    disabled={aiToolLoading}
+                                    className="p-2 bg-primary/10 text-primary rounded hover:bg-primary/20" 
+                                    title="AI Rewrite"
+                                >
+                                    <span className={`material-symbols-outlined text-lg ${aiToolLoading ? 'animate-spin' : ''}`}>auto_fix_high</span>
+                                </button>
+                              </div>
+                          </div>
+                          
+                          {['text','email','url','number','phone','textarea'].includes(selectedField.type) && (
+                              <div>
+                                  <label className="text-xs font-bold opacity-70">Placeholder</label>
+                                  <input 
+                                      type="text" 
+                                      value={selectedField.placeholder || ''} 
+                                      onChange={(e) => updateField(selectedField.id, { placeholder: e.target.value })}
+                                      className="w-full p-2 rounded border border-black/10 dark:border-white/10 bg-transparent text-sm"
+                                  />
+                              </div>
+                          )}
+                          
+                          <div>
+                              <label className="text-xs font-bold opacity-70">Helper Text</label>
+                              <input 
+                                  type="text" 
+                                  value={selectedField.helperText || ''} 
+                                  onChange={(e) => updateField(selectedField.id, { helperText: e.target.value })}
+                                  className="w-full p-2 rounded border border-black/10 dark:border-white/10 bg-transparent text-sm"
+                              />
+                          </div>
+
+                          <div className="flex items-center justify-between pt-2">
+                              <label className="text-sm font-bold">Required</label>
+                              <input 
+                                  type="checkbox" 
+                                  checked={selectedField.required} 
+                                  onChange={(e) => updateField(selectedField.id, { required: e.target.checked })}
+                                  className="size-4 accent-primary"
+                              />
+                          </div>
+                          
+                          {['select', 'radio', 'checkbox'].includes(selectedField.type) && (
+                              <div className="pt-4 border-t border-black/10 dark:border-white/10">
+                                  <div className="flex justify-between items-center mb-2">
+                                      <label className="text-xs font-bold opacity-70">Options</label>
+                                      <button 
+                                        onClick={() => handleAiGenerateOptions(selectedField.id, selectedField.label)}
+                                        className="text-[10px] font-bold text-primary flex items-center gap-1 hover:underline"
+                                      >
+                                          <span className="material-symbols-outlined text-xs">auto_awesome</span> Generate
+                                      </button>
+                                  </div>
+                                  <div className="flex flex-col gap-2">
+                                      {selectedField.options?.map((opt, i) => (
+                                          <div key={i} className="flex gap-2">
+                                              <input 
+                                                  type="text" 
+                                                  value={opt} 
+                                                  onChange={(e) => {
+                                                      const newOpts = [...(selectedField.options || [])];
+                                                      newOpts[i] = e.target.value;
+                                                      updateField(selectedField.id, { options: newOpts });
+                                                  }}
+                                                  className="flex-1 p-1.5 rounded border border-black/10 dark:border-white/10 bg-transparent text-sm"
+                                              />
+                                              <button 
+                                                  onClick={() => {
+                                                      const newOpts = selectedField.options?.filter((_, idx) => idx !== i);
+                                                      updateField(selectedField.id, { options: newOpts });
+                                                  }}
+                                                  className="text-red-500 hover:bg-red-50 p-1 rounded"
+                                              >
+                                                  <span className="material-symbols-outlined text-sm">close</span>
+                                              </button>
+                                          </div>
+                                      ))}
+                                      <button 
+                                          onClick={() => updateField(selectedField.id, { options: [...(selectedField.options || []), 'New Option'] })}
+                                          className="text-xs font-bold text-primary hover:underline text-left mt-1"
+                                      >
+                                          + Add Option
+                                      </button>
+                                  </div>
+                              </div>
+                          )}
+
+                          {selectedField.type === 'html' && (
+                              <div>
+                                  <label className="text-xs font-bold opacity-70">HTML Content</label>
+                                  <textarea 
+                                      rows={6}
+                                      value={selectedField.content || ''} 
+                                      onChange={(e) => updateField(selectedField.id, { content: e.target.value })}
+                                      className="w-full p-2 rounded border border-black/10 dark:border-white/10 bg-transparent text-sm font-mono"
+                                  />
+                              </div>
+                          )}
+                          
+                          {selectedField.type === 'product' && (
+                              <div className="flex flex-col gap-3 pt-2 border-t border-black/10 dark:border-white/10">
+                                  <div>
+                                      <label className="text-xs font-bold opacity-70">Price</label>
+                                      <input type="number" value={selectedField.price} onChange={(e) => updateField(selectedField.id, { price: Number(e.target.value) })} className="w-full p-2 rounded border border-black/10 dark:border-white/10 bg-transparent text-sm" />
+                                  </div>
+                                  <div>
+                                      <label className="text-xs font-bold opacity-70">Currency</label>
+                                      <input type="text" value={selectedField.currency} onChange={(e) => updateField(selectedField.id, { currency: e.target.value })} className="w-full p-2 rounded border border-black/10 dark:border-white/10 bg-transparent text-sm" />
+                                  </div>
+                              </div>
+                          )}
+
+                          {/* Logic Rules Section */}
+                          <div className="pt-4 border-t border-black/10 dark:border-white/10 mt-2">
+                              <div className="flex justify-between items-center mb-2">
+                                  <label className="text-xs font-bold opacity-70 flex items-center gap-1">
+                                      <span className="material-symbols-outlined text-sm">call_split</span> Logic
+                                  </label>
+                                  <button onClick={() => addLogicRule(selectedField.id)} className="text-xs text-primary font-bold hover:underline">+ Add Rule</button>
+                              </div>
+                              {selectedField.logic && selectedField.logic.length > 0 ? (
+                                  <div className="flex flex-col gap-2">
+                                      {selectedField.logic.map((rule, i) => (
+                                          <div key={i} className="p-2 bg-black/5 dark:bg-white/5 rounded text-xs flex flex-col gap-2 relative group">
+                                              <button onClick={() => removeLogicRule(selectedField.id, i)} className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 text-red-500"><span className="material-symbols-outlined text-sm">close</span></button>
+                                              <div className="flex items-center gap-1">
+                                                  <select 
+                                                      value={rule.action}
+                                                      onChange={(e) => updateLogicRule(selectedField.id, i, { action: e.target.value as any })}
+                                                      className="bg-transparent font-bold border-b border-black/20 outline-none"
+                                                  >
+                                                      <option value="show">Show</option>
+                                                      <option value="hide">Hide</option>
+                                                  </select>
+                                                  <span>this field if</span>
+                                              </div>
+                                              <select 
+                                                  value={rule.fieldId}
+                                                  onChange={(e) => updateLogicRule(selectedField.id, i, { fieldId: e.target.value })}
+                                                  className="w-full p-1 bg-white dark:bg-black rounded border border-black/10"
+                                              >
+                                                  <option value="">Select Field</option>
+                                                  {form?.fields.filter(f => f.id !== selectedField.id).map(f => (
+                                                      <option key={f.id} value={f.id}>{f.label}</option>
+                                                  ))}
+                                              </select>
+                                              <div className="flex gap-1">
+                                                  <select 
+                                                      value={rule.condition}
+                                                      onChange={(e) => updateLogicRule(selectedField.id, i, { condition: e.target.value as any })}
+                                                      className="flex-1 p-1 bg-white dark:bg-black rounded border border-black/10"
+                                                  >
+                                                      <option value="equals">Equals</option>
+                                                      <option value="not_equals">Not Equals</option>
+                                                      <option value="contains">Contains</option>
+                                                  </select>
+                                                  <input 
+                                                      type="text"
+                                                      value={rule.value}
+                                                      onChange={(e) => updateLogicRule(selectedField.id, i, { value: e.target.value })}
+                                                      placeholder="Value"
+                                                      className="flex-1 p-1 bg-white dark:bg-black rounded border border-black/10"
+                                                  />
+                                              </div>
+                                          </div>
+                                      ))}
+                                  </div>
+                              ) : (
+                                  <p className="text-xs opacity-50 italic">No logic rules defined.</p>
+                              )}
+                          </div>
+                      </div>
                   </div>
-                  
-                  {isFormSettingsSelected ? (
-                      <div className="p-4 flex flex-col gap-6">
-                           <div className="flex flex-col gap-2">
-                               <label className="text-xs font-bold uppercase opacity-50">Form Title</label>
-                               <input className="p-2 border border-black/10 dark:border-white/10 rounded bg-transparent" value={form?.title || ''} onChange={(e) => updateFormMeta('title', e.target.value)} />
-                           </div>
-                           <div className="flex flex-col gap-2">
-                               <label className="text-xs font-bold uppercase opacity-50">Description</label>
-                               <textarea rows={3} className="p-2 border border-black/10 dark:border-white/10 rounded bg-transparent" value={form?.description || ''} onChange={(e) => updateFormMeta('description', e.target.value)} />
-                           </div>
-                           <div className="flex flex-col gap-2">
-                               <label className="text-xs font-bold uppercase opacity-50">Submit Button Text</label>
-                               <input className="p-2 border border-black/10 dark:border-white/10 rounded bg-transparent" value={form?.submitButtonText || ''} onChange={(e) => updateFormMeta('submitButtonText', e.target.value)} />
-                           </div>
-                           <div className="pt-4 border-t border-black/10 dark:border-white/10">
-                               <button onClick={clearAllFields} className="w-full py-2 text-red-500 border border-red-500 rounded hover:bg-red-50 font-bold text-xs">Clear All Fields</button>
-                           </div>
+              )}
+
+              {/* Settings Panel (Right Side - only visible if Form Settings clicked) */}
+              {isFormSettingsSelected && (
+                   <div className="fixed right-0 top-[65px] bottom-0 w-80 bg-white dark:bg-[#1e1e1e] border-l border-black/10 dark:border-white/10 p-4 overflow-y-auto z-20 animate-fade-in shadow-2xl">
+                      <div className="flex items-center justify-between mb-6">
+                          <h3 className="font-bold">Form Settings</h3>
+                          <button onClick={() => setSelectedId(null)}><span className="material-symbols-outlined">close</span></button>
                       </div>
-                  ) : selectedField ? (
-                      <div className="p-4 flex flex-col gap-6">
-                           {/* Basic Properties */}
+                      <div className="flex flex-col gap-6">
+                          <div className="flex flex-col gap-2">
+                              <label className="text-xs font-bold opacity-70">Logo</label>
+                              <div className="flex items-center gap-3">
+                                  {form?.theme?.logo ? (
+                                      <img src={form.theme.logo} alt="Logo" className="h-12 w-12 object-contain bg-black/5 rounded" />
+                                  ) : (
+                                      <div className="h-12 w-12 bg-black/5 rounded flex items-center justify-center text-xs text-center p-1">No Logo</div>
+                                  )}
+                                  <label className="flex-1 cursor-pointer bg-black/5 hover:bg-black/10 py-2 px-4 rounded text-xs font-bold text-center transition-colors">
+                                      Upload Logo
+                                      <input type="file" className="hidden" accept="image/*" ref={logoInputRef} onChange={(e) => handleAssetUpload(e, 'logo')} />
+                                  </label>
+                              </div>
+                          </div>
+
+                          <div className="flex flex-col gap-2">
+                              <label className="text-xs font-bold opacity-70">Cover Image</label>
+                              {form?.theme?.coverImage ? (
+                                  <div className="h-24 w-full bg-cover bg-center rounded relative group">
+                                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                          <button onClick={() => updateTheme({ coverImage: '' })} className="text-white text-xs font-bold hover:underline">Remove</button>
+                                      </div>
+                                      <img src={form.theme.coverImage} className="h-full w-full object-cover rounded hidden" /> 
+                                      {/* Using div bg instead of img tag for cover usually better for layout */}
+                                      <div className="h-full w-full bg-cover bg-center rounded" style={{ backgroundImage: `url(${form.theme.coverImage})` }}></div>
+                                  </div>
+                              ) : (
+                                  <div className="h-24 w-full bg-black/5 rounded flex items-center justify-center text-xs opacity-50">No Cover Image</div>
+                              )}
+                              <label className="cursor-pointer bg-black/5 hover:bg-black/10 py-2 px-4 rounded text-xs font-bold text-center transition-colors">
+                                  Upload Cover
+                                  <input type="file" className="hidden" accept="image/*" ref={coverInputRef} onChange={(e) => handleAssetUpload(e, 'cover')} />
+                              </label>
+                              {uploadingAsset && <p className="text-xs text-primary animate-pulse">Uploading...</p>}
+                          </div>
+
+                          <div className="h-px bg-black/10 dark:bg-white/10"></div>
+                          
+                          <div className="flex flex-col gap-2">
+                              <label className="text-xs font-bold opacity-70">Custom URL Slug</label>
+                              <div className="flex items-center gap-1">
+                                  <span className="text-xs opacity-50">regalforms.xyz/</span>
+                                  <input 
+                                      type="text" 
+                                      value={customSlug} 
+                                      onChange={(e) => { setCustomSlug(e.target.value); setSlugStatus('idle'); }}
+                                      placeholder="my-custom-form"
+                                      className="flex-1 p-2 rounded border border-black/10 dark:border-white/10 bg-transparent text-sm"
+                                  />
+                              </div>
+                          </div>
+
+                          <div className="flex flex-col gap-2">
+                              <label className="text-xs font-bold opacity-70">Submit Button Text</label>
+                              <input 
+                                  type="text" 
+                                  value={form?.submitButtonText || 'Submit'} 
+                                  onChange={(e) => updateFormMeta('submitButtonText', e.target.value)}
+                                  className="w-full p-2 rounded border border-black/10 dark:border-white/10 bg-transparent text-sm"
+                              />
+                          </div>
+                          
+                          <div className="flex flex-col gap-2">
+                              <label className="text-xs font-bold opacity-70">Border Radius</label>
+                              <div className="flex gap-1 p-1 bg-black/5 rounded-lg">
+                                  {['none', 'sm', 'md', 'lg', 'full'].map((r) => (
+                                      <button 
+                                          key={r} 
+                                          onClick={() => updateTheme({ borderRadius: r as any })}
+                                          className={`flex-1 py-1 rounded text-[10px] uppercase font-bold ${form?.theme?.borderRadius === r ? 'bg-white shadow-sm text-black' : 'text-black/50 hover:text-black'}`}
+                                      >
+                                          {r}
+                                      </button>
+                                  ))}
+                              </div>
+                          </div>
+                          
                            <div className="flex flex-col gap-2">
-                               <label className="text-xs font-bold uppercase opacity-50">Label</label>
-                               <div className="flex gap-2">
-                                   <input className="p-2 border border-black/10 dark:border-white/10 rounded bg-transparent flex-1" value={selectedField.label} onChange={(e) => updateField(selectedField.id, { label: e.target.value })} />
-                                   <button onClick={() => handleAiOptimizeLabel(selectedField.id, selectedField.label)} disabled={aiToolLoading} className="p-2 bg-primary/10 text-primary rounded hover:bg-primary/20" title="Optimize with AI"><span className="material-symbols-outlined text-sm">auto_awesome</span></button>
-                               </div>
-                           </div>
-                           
-                           <div className="flex items-center justify-between">
-                               <label className="text-xs font-bold uppercase opacity-50">Required</label>
-                               <input type="checkbox" checked={selectedField.required} onChange={(e) => updateField(selectedField.id, { required: e.target.checked })} className="accent-primary size-4" />
-                           </div>
-
-                           {/* Common Text Fields Options */}
-                           {['text', 'textarea', 'email', 'number', 'phone', 'url', 'country'].includes(selectedField.type) && (
-                               <div className="flex flex-col gap-4">
-                                   <div className="flex flex-col gap-2">
-                                       <label className="text-xs font-bold uppercase opacity-50">Placeholder</label>
-                                       <input className="p-2 border border-black/10 dark:border-white/10 rounded bg-transparent" value={selectedField.placeholder || ''} onChange={(e) => updateField(selectedField.id, { placeholder: e.target.value })} />
-                                   </div>
-                                   <div className="flex flex-col gap-2">
-                                       <label className="text-xs font-bold uppercase opacity-50">Helper Text</label>
-                                       <input className="p-2 border border-black/10 dark:border-white/10 rounded bg-transparent" value={selectedField.helperText || ''} onChange={(e) => updateField(selectedField.id, { helperText: e.target.value })} placeholder="Instructional text below input" />
-                                   </div>
-                               </div>
-                           )}
-                           
-                           {/* Phone Specific */}
-                           {selectedField.type === 'phone' && (
-                               <div className="flex items-center justify-between p-2 bg-black/5 dark:bg-white/5 rounded">
-                                   <label className="text-xs font-bold uppercase opacity-50">Show Country Code</label>
-                                   <input type="checkbox" checked={selectedField.showCountryCode !== false} onChange={(e) => updateField(selectedField.id, { showCountryCode: e.target.checked })} className="accent-primary size-4" />
-                               </div>
-                           )}
-
-                           {/* Options Logic for Dropdowns */}
-                           {['select', 'radio', 'checkbox'].includes(selectedField.type) && (
-                               <div className="flex flex-col gap-3">
-                                   <div className="flex justify-between items-center">
-                                       <label className="text-xs font-bold uppercase opacity-50">Options</label>
-                                       <button onClick={() => handleAiGenerateOptions(selectedField.id, selectedField.label)} disabled={aiToolLoading} className="text-[10px] font-bold text-primary hover:underline flex items-center gap-1"><span className="material-symbols-outlined text-[10px]">auto_awesome</span> Generate</button>
-                                   </div>
-                                   <div className="flex flex-col gap-2">
-                                       {selectedField.options?.map((opt, idx) => (
-                                           <div key={idx} className="flex gap-2">
-                                               <input className="p-1.5 text-sm border border-black/10 dark:border-white/10 rounded bg-transparent flex-1" value={opt} onChange={(e) => {
-                                                   const newOpts = [...(selectedField.options || [])];
-                                                   newOpts[idx] = e.target.value;
-                                                   updateField(selectedField.id, { options: newOpts });
-                                               }} />
-                                               <button onClick={() => {
-                                                   const newOpts = selectedField.options?.filter((_, i) => i !== idx);
-                                                   updateField(selectedField.id, { options: newOpts });
-                                               }} className="text-red-500 hover:bg-red-50 p-1 rounded"><span className="material-symbols-outlined text-sm">close</span></button>
-                                           </div>
-                                       ))}
-                                       <button onClick={() => updateField(selectedField.id, { options: [...(selectedField.options || []), `Option ${(selectedField.options?.length || 0) + 1}`] })} className="text-xs font-bold text-primary flex items-center gap-1 mt-1"><span className="material-symbols-outlined text-sm">add</span> Add Option</button>
-                                   </div>
-                               </div>
-                           )}
-
-                           {/* Conditional Logic Editor */}
-                           <div className="border-t border-black/10 dark:border-white/10 pt-4 mt-2">
-                               <div className="flex justify-between items-center mb-2">
-                                   <label className="text-xs font-bold uppercase opacity-50">Conditional Logic</label>
-                                   <button onClick={() => addLogicRule(selectedField.id)} className="text-xs font-bold text-primary hover:underline flex items-center gap-1"><span className="material-symbols-outlined text-sm">add_circle</span> Add Rule</button>
-                               </div>
-                               
-                               {!selectedField.logic || selectedField.logic.length === 0 ? (
-                                   <p className="text-xs text-black/40 dark:text-white/40 italic">No rules. Field is always visible.</p>
-                               ) : (
-                                   <div className="flex flex-col gap-3">
-                                       {selectedField.logic.map((rule, idx) => (
-                                           <div key={idx} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-xs flex flex-col gap-2 relative group">
-                                                <button onClick={() => removeLogicRule(selectedField.id, idx)} className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 text-red-500"><span className="material-symbols-outlined text-sm">close</span></button>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-bold opacity-70 w-10">IF</span>
-                                                    <select 
-                                                        className="flex-1 p-1 rounded border border-black/10 dark:border-white/10 bg-transparent"
-                                                        value={rule.fieldId}
-                                                        onChange={(e) => updateLogicRule(selectedField.id, idx, { fieldId: e.target.value })}
-                                                    >
-                                                        {form?.fields.filter(f => f.id !== selectedField.id).map(f => (
-                                                            <option key={f.id} value={f.id}>{f.label.substring(0, 20)}</option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-bold opacity-70 w-10">IS</span>
-                                                    <select 
-                                                        className="flex-1 p-1 rounded border border-black/10 dark:border-white/10 bg-transparent"
-                                                        value={rule.condition}
-                                                        onChange={(e) => updateLogicRule(selectedField.id, idx, { condition: e.target.value as any })}
-                                                    >
-                                                        <option value="equals">Equal To</option>
-                                                        <option value="not_equals">Not Equal To</option>
-                                                        <option value="contains">Contains</option>
-                                                    </select>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-bold opacity-70 w-10">VAL</span>
-                                                    <input 
-                                                        className="flex-1 p-1 rounded border border-black/10 dark:border-white/10 bg-transparent"
-                                                        placeholder="Value..."
-                                                        value={rule.value}
-                                                        onChange={(e) => updateLogicRule(selectedField.id, idx, { value: e.target.value })}
-                                                    />
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-bold opacity-70 w-10">THEN</span>
-                                                    <select 
-                                                        className="flex-1 p-1 rounded border border-black/10 dark:border-white/10 bg-transparent font-bold text-primary"
-                                                        value={rule.action}
-                                                        onChange={(e) => updateLogicRule(selectedField.id, idx, { action: e.target.value as any })}
-                                                    >
-                                                        <option value="show">Show This Field</option>
-                                                        <option value="hide">Hide This Field</option>
-                                                    </select>
-                                                </div>
-                                           </div>
-                                       ))}
-                                   </div>
-                               )}
-                           </div>
+                              <label className="text-xs font-bold opacity-70">Font Family</label>
+                              <div className="flex gap-1 p-1 bg-black/5 rounded-lg">
+                                  {['sans', 'serif', 'mono'].map((f) => (
+                                      <button 
+                                          key={f} 
+                                          onClick={() => updateTheme({ fontFamily: f as any })}
+                                          className={`flex-1 py-1 rounded text-[10px] uppercase font-bold ${form?.theme?.fontFamily === f ? 'bg-white shadow-sm text-black' : 'text-black/50 hover:text-black'}`}
+                                      >
+                                          {f}
+                                      </button>
+                                  ))}
+                              </div>
+                          </div>
                       </div>
-                  ) : null}
-              </aside>
-          )}
+                   </div>
+              )}
+          </main>
       </div>
 
       {/* Share Modal */}
       {showShareModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
-              <div className="bg-white dark:bg-[#1e1e1e] rounded-2xl shadow-2xl w-full max-w-md border border-black/10 dark:border-white/10 overflow-hidden">
-                  <div className="p-6 text-center">
-                      <div className="size-16 bg-green-100 dark:bg-green-900/20 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
-                          <span className="material-symbols-outlined text-3xl">check</span>
-                      </div>
-                      <h2 className="text-2xl font-black mb-2">Form Published!</h2>
-                      <p className="text-black/60 dark:text-white/60 text-sm mb-6">Your form is live and ready to collect responses.</p>
-                      
-                      <div className="bg-black/5 dark:bg-black/30 p-3 rounded-lg flex items-center gap-2 mb-4 border border-black/5 dark:border-white/5">
-                          <span className="material-symbols-outlined text-black/40 dark:text-white/40">link</span>
-                          <input readOnly value={shareUrl} className="bg-transparent border-none outline-none text-sm font-mono text-black/80 dark:text-white/80 flex-1 truncate" />
-                          <button 
-                              onClick={() => {
-                                  navigator.clipboard.writeText(shareUrl);
-                                  setCopySuccess(true);
-                                  setTimeout(() => setCopySuccess(false), 2000);
-                              }}
-                              className="text-primary hover:bg-white dark:hover:bg-white/10 p-1.5 rounded transition-colors font-bold text-xs"
-                          >
-                              {copySuccess ? 'Copied!' : 'Copy'}
-                          </button>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
+              <div className="bg-white dark:bg-[#1e1e1e] rounded-xl shadow-2xl max-w-md w-full p-6 border border-black/10 dark:border-white/10">
+                  <div className="flex justify-between items-center mb-6">
+                      <h3 className="text-xl font-black">Share Form</h3>
+                      <button onClick={() => setShowShareModal(false)}><span className="material-symbols-outlined">close</span></button>
+                  </div>
+                  
+                  <div className="flex flex-col gap-4">
+                      <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900/30 rounded-lg flex items-center gap-3">
+                          <span className="material-symbols-outlined text-green-600 dark:text-green-400">check_circle</span>
+                          <div>
+                              <p className="font-bold text-sm text-green-800 dark:text-green-300">Form Published Successfully!</p>
+                              <p className="text-xs text-green-700 dark:text-green-400">Your form is now live and ready to collect responses.</p>
+                          </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-3">
-                          <button onClick={() => {
-                              window.open(`https://twitter.com/intent/tweet?text=Check out my form!&url=${encodeURIComponent(shareUrl)}`, '_blank');
-                          }} className="flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[#1DA1F2]/10 text-[#1DA1F2] font-bold text-sm hover:bg-[#1DA1F2]/20 transition-colors">
-                              <svg className="size-4" fill="currentColor" viewBox="0 0 24 24"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/></svg>
-                              Twitter
-                          </button>
-                          <button onClick={() => {
-                               window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`, '_blank');
-                          }} className="flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[#0A66C2]/10 text-[#0A66C2] font-bold text-sm hover:bg-[#0A66C2]/20 transition-colors">
-                              <svg className="size-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
-                              LinkedIn
-                          </button>
+                      <div>
+                          <label className="text-xs font-bold opacity-70 mb-1 block">Public Link</label>
+                          <div className="flex gap-2">
+                              <input 
+                                  type="text" 
+                                  readOnly 
+                                  value={shareUrl} 
+                                  className="flex-1 p-3 rounded-lg border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 text-sm font-mono"
+                              />
+                              <button 
+                                  onClick={() => {
+                                      navigator.clipboard.writeText(shareUrl);
+                                      setCopySuccess(true);
+                                      setTimeout(() => setCopySuccess(false), 2000);
+                                  }}
+                                  className="px-4 bg-primary text-white rounded-lg font-bold text-sm hover:bg-orange-600 transition-colors flex items-center gap-2"
+                              >
+                                  {copySuccess ? <span className="material-symbols-outlined text-lg">check</span> : <span className="material-symbols-outlined text-lg">content_copy</span>}
+                              </button>
+                          </div>
                       </div>
-                  </div>
-                  <div className="bg-black/5 dark:bg-white/5 p-4 border-t border-black/10 dark:border-white/10 flex justify-between gap-3">
-                      <button onClick={() => setShowShareModal(false)} className="flex-1 py-3 text-sm font-bold rounded-lg border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 transition-colors">Close</button>
-                      <button onClick={() => navigate('/dashboard')} className="flex-1 py-3 text-sm font-bold rounded-lg bg-black text-white dark:bg-white dark:text-black hover:opacity-80 transition-opacity">Go to Dashboard</button>
+
+                      <div className="grid grid-cols-2 gap-3 mt-2">
+                          <a 
+                              href={`https://twitter.com/intent/tweet?text=Check out this form I built with Regal Forms!&url=${encodeURIComponent(shareUrl)}`}
+                              target="_blank"
+                              rel="noreferrer" 
+                              className="flex items-center justify-center gap-2 py-2.5 rounded-lg bg-black text-white hover:opacity-80 transition-opacity text-sm font-bold"
+                          >
+                              <svg className="size-4 fill-current" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                              Post to X
+                          </a>
+                          <a 
+                              href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`}
+                              target="_blank"
+                              rel="noreferrer" 
+                              className="flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[#0077b5] text-white hover:opacity-80 transition-opacity text-sm font-bold"
+                          >
+                              <svg className="size-4 fill-current" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                              LinkedIn
+                          </a>
+                      </div>
+                      
+                      <div className="pt-4 border-t border-black/10 dark:border-white/10 text-center">
+                           <Link to="/admin" className="text-primary text-sm font-bold hover:underline">Return to Dashboard</Link>
+                      </div>
                   </div>
               </div>
           </div>
