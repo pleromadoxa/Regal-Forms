@@ -77,7 +77,6 @@ const THEME_PRESETS: { name: string; theme: FormTheme }[] = [
         name: "Midnight Ruby",
         theme: { primaryColor: '#ef4444', backgroundColor: '#280505', textColor: '#fee2e2', fontFamily: 'serif', borderRadius: 'md' }
     },
-    // New Themes
     {
         name: "Solar Flare",
         theme: { primaryColor: '#f59e0b', backgroundColor: '#1c1917', textColor: '#fef3c7', fontFamily: 'sans', borderRadius: 'lg' }
@@ -497,8 +496,23 @@ const BuilderPage: React.FC = () => {
       }
   };
 
+  // Define custom styles based on theme to mirror FormPublicPage logic
+  const customStyles = {
+      '--primary': currentTheme.primaryColor,
+      '--bg': currentTheme.backgroundColor,
+      '--text': currentTheme.textColor,
+      '--radius': getBorderRadiusPx(currentTheme.borderRadius),
+  } as React.CSSProperties;
+
   return (
     <div className="flex flex-col h-screen w-full bg-background-light dark:bg-background-dark text-black dark:text-white overflow-hidden font-display">
+      <style>{`
+        .custom-focus:focus { ring: 2px solid var(--primary); border-color: var(--primary); outline: none; }
+        .custom-btn { background-color: var(--primary); color: white; border-radius: var(--radius); }
+        .custom-input { border-radius: var(--radius); border: 1px solid color-mix(in srgb, var(--text), transparent 80%); background-color: color-mix(in srgb, var(--bg), var(--text) 5%); color: var(--text); }
+        .custom-card { background-color: color-mix(in srgb, var(--bg), var(--text) 2%); border: 1px solid color-mix(in srgb, var(--text), transparent 90%); border-radius: var(--radius); }
+      `}</style>
+
       {/* Header */}
       <header className="relative flex items-center justify-between px-4 py-3 bg-white dark:bg-black/40 border-b border-black/10 dark:border-white/10 shrink-0 z-30">
         {/* Left Side */}
@@ -662,24 +676,26 @@ const BuilderPage: React.FC = () => {
             onDrop={handleDrop}
           >
               <div 
-                  className={`w-full max-w-2xl transition-all duration-300 h-fit min-h-[calc(100vh-100px)] ${isDraggingOver ? 'scale-[1.02] ring-4 ring-primary/20' : ''}`}
+                  className={`w-full max-w-2xl transition-all duration-300 h-fit min-h-[calc(100vh-100px)] custom-card shadow-xl relative ${isDraggingOver ? 'scale-[1.02] ring-4 ring-primary/20' : ''}`}
                   style={{
                       backgroundColor: currentTheme.backgroundColor,
                       color: currentTheme.textColor,
                       borderRadius: getBorderRadiusPx(currentTheme.borderRadius),
-                      fontFamily: currentTheme.fontFamily === 'mono' ? '"Fira Code", monospace' : currentTheme.fontFamily === 'serif' ? '"Playfair Display", serif' : '"Manrope", sans-serif'
+                      fontFamily: currentTheme.fontFamily === 'mono' ? '"Fira Code", monospace' : currentTheme.fontFamily === 'serif' ? '"Playfair Display", serif' : '"Manrope", sans-serif',
+                      ...customStyles
                   }}
               >
                   {currentTheme.coverImage && (
                       <div className="w-full h-48 bg-cover bg-center rounded-t-[inherit]" style={{ backgroundImage: `url(${currentTheme.coverImage})` }}></div>
                   )}
 
-                  <div className="p-8 md:p-12 flex flex-col gap-6 shadow-xl relative">
+                  <div className="p-8 md:p-12 flex flex-col gap-6">
                       {currentTheme.logo && <img src={currentTheme.logo} alt="Logo" className="h-16 mb-4 object-contain mx-auto" />}
 
                       {/* Title Block */}
                       <div 
                           className={`border-b pb-6 text-center cursor-pointer transition-colors border-transparent hover:bg-black/5 dark:hover:bg-white/5 rounded-lg p-4 ${titleError ? 'ring-2 ring-red-500 bg-red-50 dark:bg-red-900/10' : ''}`}
+                          style={{ borderColor: `${currentTheme.textColor}20` }}
                           onClick={() => setSelectedId('form-settings')}
                       >
                           {form?.title ? (
@@ -699,7 +715,7 @@ const BuilderPage: React.FC = () => {
                               <div className="flex items-center justify-between mb-2">
                                   <label className="font-bold text-sm opacity-90 pointer-events-none">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
                                   {selectedId === field.id && (
-                                      <div className="flex items-center gap-1 bg-white dark:bg-black shadow-sm rounded-lg p-1">
+                                      <div className="flex items-center gap-1 bg-white dark:bg-black shadow-sm rounded-lg p-1 absolute right-2 top-2 z-10">
                                           <button onClick={(e) => {e.stopPropagation(); handleAiOptimizeLabel(field.id, field.label)}} className="p-1 hover:bg-black/5 rounded text-primary" title="AI Optimize Label"><span className="material-symbols-outlined text-sm">auto_awesome</span></button>
                                           <button onClick={(e) => {e.stopPropagation(); duplicateField(field.id)}} className="p-1 hover:bg-black/5 rounded" title="Duplicate"><span className="material-symbols-outlined text-sm">content_copy</span></button>
                                           <button onClick={(e) => {e.stopPropagation(); removeField(field.id)}} className="p-1 hover:bg-red-50 text-red-500 rounded" title="Delete"><span className="material-symbols-outlined text-sm">delete</span></button>
@@ -707,37 +723,40 @@ const BuilderPage: React.FC = () => {
                                   )}
                               </div>
                               
-                              {/* Field Previews */}
-                              <div className="pointer-events-none opacity-60">
-                                  {['text', 'email', 'number', 'url'].includes(field.type) && <div className="h-10 w-full border border-current rounded opacity-30 bg-black/5 px-2 flex items-center text-sm">{field.placeholder}</div>}
+                              {/* Field Previews using custom-input classes */}
+                              <div className="pointer-events-none">
+                                  {['text', 'email', 'number', 'url'].includes(field.type) && <div className="custom-input h-12 w-full px-3 flex items-center text-sm">{field.placeholder}</div>}
                                   
                                   {field.type === 'phone' && (
-                                      <div className="h-10 w-full border border-current rounded opacity-30 bg-black/5 flex items-center px-3 gap-2">
-                                          {field.showCountryCode && (
-                                              <div className="flex items-center gap-1 border-r border-current pr-2 mr-2">
+                                      <div className="flex gap-2">
+                                          {field.showCountryCode !== false && (
+                                              <div className="custom-input h-12 w-28 flex items-center justify-between px-3">
                                                   <span className="text-xs">US +1</span>
                                                   <span className="material-symbols-outlined text-xs">arrow_drop_down</span>
                                               </div>
                                           )}
-                                          <span>{field.placeholder || '123-456-7890'}</span>
+                                          <div className="custom-input h-12 flex-1 flex items-center px-3">
+                                              <span>{field.placeholder || '123-456-7890'}</span>
+                                          </div>
                                       </div>
                                   )}
                                   
                                   {field.type === 'country' && (
-                                      <div className="h-10 w-full border border-current rounded opacity-30 bg-black/5 flex items-center justify-between px-3">
+                                      <div className="custom-input h-12 w-full flex items-center justify-between px-3">
                                           <span className="text-sm">Select Country...</span>
                                           <span className="material-symbols-outlined text-sm">arrow_drop_down</span>
                                       </div>
                                   )}
 
-                                  {field.type === 'textarea' && <div className="h-24 w-full border border-current rounded opacity-30 bg-black/5"></div>}
-                                  {field.type === 'select' && <div className="h-10 w-full border border-current rounded opacity-30 bg-black/5 flex items-center justify-between px-3"><span className="text-xs">Dropdown</span><span className="material-symbols-outlined text-sm">arrow_drop_down</span></div>}
+                                  {field.type === 'textarea' && <div className="custom-input h-32 w-full"></div>}
+                                  
+                                  {field.type === 'select' && <div className="custom-input h-12 w-full flex items-center justify-between px-3"><span className="text-xs">Select...</span><span className="material-symbols-outlined text-sm">arrow_drop_down</span></div>}
                                   
                                   {(field.type === 'radio' || field.type === 'checkbox') && (
                                     <div className="flex flex-col gap-2">
                                         {field.options?.map((opt, i) => (
                                             <div key={i} className="flex items-center gap-2">
-                                                <div className={`size-4 border border-current opacity-50 ${field.type === 'radio' ? 'rounded-full' : 'rounded'}`}></div>
+                                                <div className={`size-4 border opacity-50 ${field.type === 'radio' ? 'rounded-full' : 'rounded'}`} style={{ borderColor: currentTheme.textColor }}></div>
                                                 <span className="text-sm opacity-80">{opt}</span>
                                             </div>
                                         ))}
@@ -745,14 +764,14 @@ const BuilderPage: React.FC = () => {
                                   )}
 
                                   {['date', 'time'].includes(field.type) && (
-                                      <div className="h-10 w-full border border-current rounded opacity-30 bg-black/5 flex items-center justify-between px-3">
-                                          <span className="text-sm">{field.placeholder || (field.type === 'date' ? 'Select Date' : 'Select Time')}</span>
+                                      <div className="custom-input h-12 w-full flex items-center justify-between px-3">
+                                          <span className="text-sm">{field.placeholder || (field.type === 'date' ? 'mm/dd/yyyy' : '--:--')}</span>
                                           <span className="material-symbols-outlined text-sm">{field.type === 'date' ? 'calendar_today' : 'schedule'}</span>
                                       </div>
                                   )}
                                   
                                   {['file', 'image'].includes(field.type) && (
-                                      <div className="h-20 w-full border-2 border-dashed border-current rounded opacity-30 bg-black/5 flex flex-col items-center justify-center">
+                                      <div className="h-24 w-full border-2 border-dashed rounded-lg opacity-50 flex flex-col items-center justify-center" style={{ borderColor: currentTheme.textColor, backgroundColor: 'color-mix(in srgb, var(--bg), var(--text) 5%)' }}>
                                           <span className="material-symbols-outlined">cloud_upload</span>
                                           <span className="text-xs">Upload {field.type === 'image' ? 'Image' : 'File'}</span>
                                       </div>
@@ -769,16 +788,16 @@ const BuilderPage: React.FC = () => {
                                   {field.type === 'slider' && (
                                       <div className="flex items-center gap-3">
                                           <span className="text-xs opacity-50">{field.min || 0}</span>
-                                          <div className="h-1 flex-1 bg-current opacity-30 rounded-full relative">
-                                              <div className="absolute left-1/2 top-1/2 -translate-y-1/2 size-3 bg-current rounded-full"></div>
+                                          <div className="h-1 flex-1 opacity-30 rounded-full relative" style={{ backgroundColor: currentTheme.textColor }}>
+                                              <div className="absolute left-1/2 top-1/2 -translate-y-1/2 size-3 rounded-full" style={{ backgroundColor: currentTheme.textColor }}></div>
                                           </div>
                                           <span className="text-xs opacity-50">{field.max || 100}</span>
                                       </div>
                                   )}
                                   
                                   {field.type === 'product' && (
-                                      <div className="p-3 border border-current rounded-lg flex items-center gap-4 opacity-60">
-                                          <div className="size-12 bg-black/10 rounded flex items-center justify-center"><span className="material-symbols-outlined">shopping_bag</span></div>
+                                      <div className="p-3 border rounded-lg flex items-center gap-4 opacity-60" style={{ borderColor: currentTheme.textColor }}>
+                                          <div className="size-12 rounded flex items-center justify-center bg-black/5"><span className="material-symbols-outlined">shopping_bag</span></div>
                                           <div className="flex-1">
                                               <div className="h-3 w-20 bg-black/20 rounded mb-1"></div>
                                               <div className="h-2 w-32 bg-black/10 rounded"></div>
@@ -792,14 +811,14 @@ const BuilderPage: React.FC = () => {
                                   )}
                                   
                                   {field.type === 'quote' && (
-                                    <div className="border-l-4 border-current pl-4 italic opacity-80">
+                                    <div className="border-l-4 pl-4 italic opacity-80" style={{ borderColor: currentTheme.textColor }}>
                                         "{field.content}"
                                         <div className="text-xs font-bold mt-1 opacity-60">- {field.author}</div>
                                     </div>
                                   )}
                                   
                                   {field.type === 'countdown' && (
-                                      <div className="flex gap-4 justify-center p-4 bg-black/5 rounded-lg opacity-80">
+                                      <div className="flex gap-4 justify-center p-4 rounded-lg opacity-80" style={{ backgroundColor: 'color-mix(in srgb, var(--bg), var(--text) 5%)' }}>
                                           <div className="text-center"><span className="text-xl font-bold">00</span><div className="text-[10px] uppercase">Days</div></div>
                                           <div className="text-center"><span className="text-xl font-bold">00</span><div className="text-[10px] uppercase">Hours</div></div>
                                           <div className="text-center"><span className="text-xl font-bold">00</span><div className="text-[10px] uppercase">Mins</div></div>
@@ -816,7 +835,7 @@ const BuilderPage: React.FC = () => {
                       ))}
 
                       {(!form || form.fields.length === 0) && (
-                          <div className="flex flex-col items-center justify-center h-64 opacity-30 border-2 border-dashed border-current rounded-xl">
+                          <div className="flex flex-col items-center justify-center h-64 opacity-30 border-2 border-dashed rounded-xl" style={{ borderColor: currentTheme.textColor }}>
                               <span className="material-symbols-outlined text-4xl mb-2">drag_indicator</span>
                               <p className="font-bold">Drag and drop fields here</p>
                           </div>
@@ -824,19 +843,16 @@ const BuilderPage: React.FC = () => {
                       
                       {/* Submit Button Area */}
                       <div 
-                        className={`mt-8 pt-6 border-t border-current/10 text-center transition-all duration-200 cursor-pointer rounded-lg p-4 ${selectedId === 'form-settings' ? 'ring-2 ring-primary bg-primary/5' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
+                        className={`mt-8 pt-6 border-t transition-all duration-200 cursor-pointer rounded-lg p-4 ${selectedId === 'form-settings' ? 'ring-2 ring-primary bg-primary/5' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
+                        style={{ borderColor: `${currentTheme.textColor}20` }}
                         onClick={(e) => { e.stopPropagation(); setSelectedId('form-settings'); }}
                       >
                           <button 
-                              className="px-8 py-3 text-white rounded-lg font-bold opacity-90 pointer-events-none shadow-sm"
-                              style={{ 
-                                  backgroundColor: currentTheme.primaryColor,
-                                  borderRadius: getBorderRadiusPx(currentTheme.borderRadius)
-                              }}
+                              className="custom-btn w-full py-4 font-bold text-lg shadow-lg pointer-events-none opacity-90"
                           >
                               {form?.submitButtonText || 'Submit'}
                           </button>
-                          <p className="text-xs opacity-50 mt-2 font-medium">Click to edit submit button text</p>
+                          <p className="text-xs opacity-50 mt-2 font-medium text-center">Click to edit submit button text</p>
                       </div>
                   </div>
               </div>

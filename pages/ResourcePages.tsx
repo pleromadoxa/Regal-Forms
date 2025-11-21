@@ -349,6 +349,21 @@ const HELP_ARTICLES: Record<string, Article[]> = {
                     <p>Navigate to Profile Settings &gt; Billing. Click "Update Payment Method". We use Stripe for secure payment processing, so your card details are never stored on our servers directly.</p>
                 </div>
             )
+        },
+        {
+            id: 'ab3',
+            title: 'Canceling your subscription',
+            content: (
+                 <div className="space-y-4">
+                    <p>We're sorry to see you go. To cancel your subscription:</p>
+                    <ol className="list-decimal pl-5 space-y-2">
+                        <li>Go to Profile Settings > Billing.</li>
+                        <li>Click on "Manage Subscription".</li>
+                        <li>Select "Cancel Plan".</li>
+                    </ol>
+                    <p>You will retain access to paid features until the end of your current billing cycle.</p>
+                 </div>
+            )
         }
     ],
     'Form Builder': [
@@ -374,6 +389,35 @@ const HELP_ARTICLES: Record<string, Article[]> = {
                 <div className="space-y-4">
                     <p>Conditional logic allows you to show or hide fields based on previous answers.</p>
                     <p>Click on a field in the builder to open its settings. Scroll down to "Conditional Logic". Click "Add Condition". For example: <em>Show this field IF "Satisfaction" Equals "Dissatisfied"</em>.</p>
+                </div>
+            )
+        },
+        {
+            id: 'fb3',
+            title: 'Customizing themes and colors',
+            content: (
+                <div className="space-y-4">
+                    <p>Make your form match your brand:</p>
+                    <ol className="list-decimal pl-5 space-y-2">
+                        <li>Open the "Design" tab in the builder.</li>
+                        <li>Choose a <strong>Preset</strong> for quick styling.</li>
+                        <li>Or, manually adjust the "Primary Color", "Background Color", and "Text Color".</li>
+                        <li>You can also upload a custom <strong>Logo</strong> and <strong>Cover Image</strong> in the "Form Settings" panel.</li>
+                    </ol>
+                </div>
+            )
+        },
+        {
+            id: 'fb4',
+            title: 'Using AI for field generation',
+            content: (
+                <div className="space-y-4">
+                    <p>Regal Forms uses advanced AI to help you build faster:</p>
+                    <ul className="list-disc pl-5 space-y-2">
+                        <li><strong>Generate Form:</strong> Describe your intent (e.g., "Wedding RSVP") in the AI tab, and we will build the whole form.</li>
+                        <li><strong>Generate Options:</strong> For dropdowns or radio buttons, click "Generate Options" in the field settings to have AI populate the list (e.g., list of countries, age ranges).</li>
+                        <li><strong>Optimize Labels:</strong> Use the magic wand icon next to a label to have AI rewrite it for clarity.</li>
+                    </ul>
                 </div>
             )
         }
@@ -402,6 +446,103 @@ const HELP_ARTICLES: Record<string, Article[]> = {
                 <div className="space-y-4">
                     <p>Connect to 5,000+ apps.</p>
                     <p>In Zapier, create a "Catch Hook" trigger. Copy the webhook URL Zapier provides. Paste this into the Zapier integration card on Regal Forms. When you test your form, Zapier will receive the data, allowing you to trigger actions in Gmail, Trello, Salesforce, and more.</p>
+                </div>
+            )
+        },
+        {
+            id: 'in3',
+            title: 'Slack Notifications',
+            content: (
+                <div className="space-y-4">
+                    <p>Get notified where you work:</p>
+                    <ol className="list-decimal pl-5 space-y-2">
+                        <li>Create an Incoming Webhook in your Slack App settings.</li>
+                        <li>Copy the Webhook URL (starts with <code>https://hooks.slack.com/...</code>).</li>
+                        <li>Paste it into the Slack integration card in Regal Forms.</li>
+                        <li>You will receive a message in your chosen channel instantly upon every form submission.</li>
+                    </ol>
+                </div>
+            )
+        }
+    ],
+    'Security & Privacy': [
+        {
+            id: 'sp1',
+            title: 'GDPR Compliance',
+            content: (
+                <div className="space-y-4">
+                    <p>Regal Forms is committed to GDPR compliance.</p>
+                    <ul className="list-disc pl-5 space-y-2">
+                        <li><strong>Data Portability:</strong> You can export all your data in JSON format from the Profile Settings.</li>
+                        <li><strong>Right to Erasure:</strong> You can permanently delete your account and all associated data.</li>
+                        <li><strong>Consent:</strong> Our forms include options for explicit consent checkboxes if you add them.</li>
+                    </ul>
+                </div>
+            )
+        },
+        {
+            id: 'sp2',
+            title: 'Data Encryption',
+            content: (
+                <div className="space-y-4">
+                    <p>All data transmitted to and from Regal Forms is encrypted using TLS 1.2+ (Transport Layer Security). Your data at rest is stored in secure, enterprise-grade data centers with restricted access.</p>
+                </div>
+            )
+        },
+        {
+            id: 'sp3',
+            title: 'Spam Protection',
+            content: (
+                <div className="space-y-4">
+                    <p>To prevent spam submissions:</p>
+                    <ul className="list-disc pl-5 space-y-2">
+                        <li>Enable "Limit to 1 response" in Form Settings to require Google Sign-in.</li>
+                        <li>Our system automatically monitors for high-velocity submission attacks (rate limiting).</li>
+                    </ul>
+                </div>
+            )
+        }
+    ],
+    'Troubleshooting': [
+         {
+            id: 'tr1',
+            title: 'Form not saving',
+            content: (
+                <div className="space-y-4">
+                    <p>If your form fails to save:</p>
+                    <ul className="list-disc pl-5 space-y-2">
+                        <li>Check your internet connection.</li>
+                        <li>Ensure you have entered a valid Title for the form.</li>
+                        <li>Try refreshing the page (your draft is auto-saved locally).</li>
+                        <li>If the issue persists, check if you are logged in.</li>
+                    </ul>
+                </div>
+            )
+        },
+        {
+            id: 'tr2',
+            title: 'Integration not working',
+            content: (
+                <div className="space-y-4">
+                    <p>Common fixes for integrations:</p>
+                    <ul className="list-disc pl-5 space-y-2">
+                        <li><strong>Google Sheets:</strong> Ensure the sheet URL is correct and "Anyone with the link can edit" is NOT required (we use a backend service account), but ensure the sheet name matches exactly.</li>
+                        <li><strong>Slack/Zapier:</strong> Verify the Webhook URL hasn't been regenerated or deleted on the receiving end.</li>
+                    </ul>
+                </div>
+            )
+        },
+        {
+            id: 'tr3',
+            title: 'Emails not being received',
+            content: (
+                <div className="space-y-4">
+                    <p>If you aren't receiving submission notifications:</p>
+                    <ul className="list-disc pl-5 space-y-2">
+                        <li>Check your spam/junk folder.</li>
+                        <li>Verify that the email address in your Profile Settings is correct.</li>
+                        <li>Ensure you haven't unsubscribed from system notifications.</li>
+                    </ul>
                 </div>
             )
         }
@@ -455,8 +596,8 @@ export const HelpCenterPage: React.FC = () => {
       'Account & Billing': 'credit_card',
       'Form Builder': 'build_circle',
       'Integrations': 'hub',
-      'Analytics': 'monitoring',
-      'Security': 'security'
+      'Security & Privacy': 'security',
+      'Troubleshooting': 'build'
   };
 
   return (
