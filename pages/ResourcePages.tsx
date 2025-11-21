@@ -222,7 +222,7 @@ const HELP_ARTICLES: Record<string, Article[]> = {
                     <p>Once your form is published, you have several ways to share it:</p>
                     <ul className="list-disc pl-5 space-y-2">
                         <li><strong>Direct Link:</strong> Copy the unique URL provided after publishing and share it via email, social media, or SMS.</li>
-                        <li><strong>Custom Slug:</strong> Go to "Settings" -> "General" to create a friendly URL like <code>regalforms.xyz/#/form/my-event</code>.</li>
+                        <li><strong>Custom Slug:</strong> Go to "Settings" -&gt; "General" to create a friendly URL like <code>regalforms.xyz/#/form/my-event</code>.</li>
                         <li><strong>Social Buttons:</strong> Use the built-in social share buttons on the confirmation screen to post directly to X (Twitter) or LinkedIn.</li>
                     </ul>
                 </div>
@@ -275,7 +275,7 @@ const HELP_ARTICLES: Record<string, Article[]> = {
             content: (
                 <div className="space-y-4">
                     <p>To update your card on file:</p>
-                    <p>Navigate to Profile Settings > Billing. Click "Update Payment Method". We use Stripe for secure payment processing, so your card details are never stored on our servers directly.</p>
+                    <p>Navigate to Profile Settings &gt; Billing. Click "Update Payment Method". We use Stripe for secure payment processing, so your card details are never stored on our servers directly.</p>
                 </div>
             )
         },
@@ -295,7 +295,7 @@ const HELP_ARTICLES: Record<string, Article[]> = {
             content: (
                 <div className="space-y-4">
                     <p>Team collaboration is a Pro feature.</p>
-                    <p>In the Form Settings > Collaboration tab, you can invite other users by email to edit specific forms. They will receive an email notification and see the form in their dashboard.</p>
+                    <p>In the Form Settings &gt; Collaboration tab, you can invite other users by email to edit specific forms. They will receive an email notification and see the form in their dashboard.</p>
                 </div>
             )
         },
@@ -305,7 +305,7 @@ const HELP_ARTICLES: Record<string, Article[]> = {
             content: (
                 <div className="space-y-4">
                     <p>We're sorry to see you go.</p>
-                    <p>To cancel, go to Profile Settings > Billing and click "Cancel Subscription". Your plan will remain active until the end of the current billing cycle, after which your account will revert to the Free tier.</p>
+                    <p>To cancel, go to Profile Settings &gt; Billing and click "Cancel Subscription". Your plan will remain active until the end of the current billing cycle, after which your account will revert to the Free tier.</p>
                 </div>
             )
         }
@@ -352,7 +352,7 @@ const HELP_ARTICLES: Record<string, Article[]> = {
             content: (
                 <div className="space-y-4">
                     <p>To get notified when someone submits a form:</p>
-                    <p>This feature is enabled by default for the form creator. To change this or add recipients, go to Form Settings > Notifications (coming soon). Currently, check your dashboard for real-time updates.</p>
+                    <p>This feature is enabled by default for the form creator. To change this or add recipients, go to Form Settings &gt; Notifications (coming soon). Currently, check your dashboard for real-time updates.</p>
                 </div>
             )
         },
@@ -362,7 +362,7 @@ const HELP_ARTICLES: Record<string, Article[]> = {
             content: (
                 <div className="space-y-4">
                     <p>By default, users see a "Thank You" message after submitting.</p>
-                    <p>You can customize this message in Form Settings > Responses > Confirmation Message. Redirecting to a custom URL is a Pro feature available in the advanced settings.</p>
+                    <p>You can customize this message in Form Settings &gt; Responses &gt; Confirmation Message. Redirecting to a custom URL is a Pro feature available in the advanced settings.</p>
                 </div>
             )
         }
@@ -499,7 +499,7 @@ const HELP_ARTICLES: Record<string, Article[]> = {
             content: (
                 <div className="space-y-4">
                     <p>We are compliant with GDPR regulations.</p>
-                    <p>As a user, you have the right to access, correct, and delete your data (right to be forgotten). You can perform these actions from the Profile Settings > Data & Privacy section.</p>
+                    <p>As a user, you have the right to access, correct, and delete your data (right to be forgotten). You can perform these actions from the Profile Settings &gt; Data &amp; Privacy section.</p>
                 </div>
             )
         },
