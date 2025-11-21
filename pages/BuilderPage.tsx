@@ -500,7 +500,7 @@ const BuilderPage: React.FC = () => {
   return (
     <div className="flex flex-col h-screen w-full bg-background-light dark:bg-background-dark text-black dark:text-white overflow-hidden font-display">
       {/* Header */}
-      <header className="relative flex items-center justify-between px-4 py-3 bg-white dark:bg-black/40 border-b border-black/10 dark:border-white/10 shrink-0 z-20">
+      <header className="relative flex items-center justify-between px-4 py-3 bg-white dark:bg-black/40 border-b border-black/10 dark:border-white/10 shrink-0 z-30">
         {/* Left Side */}
         <div className="flex items-center gap-4 z-10">
             <button onClick={() => navigate('/dashboard')} className="flex items-center gap-1 text-sm font-bold hover:opacity-70">
@@ -827,310 +827,317 @@ const BuilderPage: React.FC = () => {
                         className={`mt-8 pt-6 border-t border-current/10 text-center transition-all duration-200 cursor-pointer rounded-lg p-4 ${selectedId === 'form-settings' ? 'ring-2 ring-primary bg-primary/5' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
                         onClick={(e) => { e.stopPropagation(); setSelectedId('form-settings'); }}
                       >
-                          <button className="px-8 py-3 bg-current text-white dark:text-black rounded-lg font-bold opacity-90 pointer-events-none shadow-sm">
+                          <button 
+                              className="px-8 py-3 text-white rounded-lg font-bold opacity-90 pointer-events-none shadow-sm"
+                              style={{ 
+                                  backgroundColor: currentTheme.primaryColor,
+                                  borderRadius: getBorderRadiusPx(currentTheme.borderRadius)
+                              }}
+                          >
                               {form?.submitButtonText || 'Submit'}
                           </button>
                           <p className="text-xs opacity-50 mt-2 font-medium">Click to edit submit button text</p>
                       </div>
                   </div>
               </div>
+          </main>
 
-              {/* Properties Panel (Right Side - only visible if selected) */}
-              {selectedId && selectedId !== 'form-settings' && selectedField && (
-                  <div className="fixed right-0 top-[65px] bottom-0 w-80 bg-white dark:bg-[#1e1e1e] border-l border-black/10 dark:border-white/10 p-4 overflow-y-auto z-20 animate-fade-in shadow-2xl">
-                      <div className="flex items-center justify-between mb-6">
-                          <h3 className="font-bold">Field Properties</h3>
-                          <button onClick={() => setSelectedId(null)}><span className="material-symbols-outlined">close</span></button>
-                      </div>
-                      <div className="flex flex-col gap-4">
-                          <div>
-                              <label className="text-xs font-bold opacity-70">Label</label>
-                              <div className="flex gap-2">
-                                <input 
-                                    type="text" 
-                                    value={selectedField.label} 
-                                    onChange={(e) => updateField(selectedField.id, { label: e.target.value })}
-                                    className="w-full p-2 rounded border border-black/10 dark:border-white/10 bg-transparent text-sm"
-                                />
-                                <button 
-                                    onClick={() => handleAiOptimizeLabel(selectedField.id, selectedField.label)}
-                                    disabled={aiToolLoading}
-                                    className="p-2 bg-primary/10 text-primary rounded hover:bg-primary/20" 
-                                    title="AI Rewrite"
-                                >
-                                    <span className={`material-symbols-outlined text-lg ${aiToolLoading ? 'animate-spin' : ''}`}>auto_fix_high</span>
-                                </button>
-                              </div>
+          {/* Right Sidebar - Properties / Settings */}
+          {(selectedId || isFormSettingsSelected) && (
+               <aside className="w-80 bg-white dark:bg-[#1e1e1e] border-l border-black/10 dark:border-white/10 flex flex-col overflow-y-auto z-20 animate-fade-in shadow-xl shrink-0">
+                  {isFormSettingsSelected ? (
+                      // Form Settings Content
+                       <div className="p-4">
+                          <div className="flex items-center justify-between mb-6">
+                              <h3 className="font-bold">Form Settings</h3>
+                              <button onClick={() => setSelectedId(null)}><span className="material-symbols-outlined">close</span></button>
                           </div>
-                          
-                          {['text','email','url','number','phone','textarea'].includes(selectedField.type) && (
-                              <div>
-                                  <label className="text-xs font-bold opacity-70">Placeholder</label>
+                          <div className="flex flex-col gap-6">
+                              <div className="flex flex-col gap-2">
+                                  <label className="text-xs font-bold opacity-70">Logo</label>
+                                  <div className="flex items-center gap-3">
+                                      {form?.theme?.logo ? (
+                                          <img src={form.theme.logo} alt="Logo" className="h-12 w-12 object-contain bg-black/5 rounded" />
+                                      ) : (
+                                          <div className="h-12 w-12 bg-black/5 rounded flex items-center justify-center text-xs text-center p-1">No Logo</div>
+                                      )}
+                                      <label className="flex-1 cursor-pointer bg-black/5 hover:bg-black/10 py-2 px-4 rounded text-xs font-bold text-center transition-colors">
+                                          Upload Logo
+                                          <input type="file" className="hidden" accept="image/*" ref={logoInputRef} onChange={(e) => handleAssetUpload(e, 'logo')} />
+                                      </label>
+                                  </div>
+                              </div>
+
+                              <div className="flex flex-col gap-2">
+                                  <label className="text-xs font-bold opacity-70">Cover Image</label>
+                                  {form?.theme?.coverImage ? (
+                                      <div className="h-24 w-full bg-cover bg-center rounded relative group">
+                                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                              <button onClick={() => updateTheme({ coverImage: '' })} className="text-white text-xs font-bold hover:underline">Remove</button>
+                                          </div>
+                                          <div className="h-full w-full bg-cover bg-center rounded" style={{ backgroundImage: `url(${form.theme.coverImage})` }}></div>
+                                      </div>
+                                  ) : (
+                                      <div className="h-24 w-full bg-black/5 rounded flex items-center justify-center text-xs opacity-50">No Cover Image</div>
+                                  )}
+                                  <label className="cursor-pointer bg-black/5 hover:bg-black/10 py-2 px-4 rounded text-xs font-bold text-center transition-colors">
+                                      Upload Cover
+                                      <input type="file" className="hidden" accept="image/*" ref={coverInputRef} onChange={(e) => handleAssetUpload(e, 'cover')} />
+                                  </label>
+                                  {uploadingAsset && <p className="text-xs text-primary animate-pulse">Uploading...</p>}
+                              </div>
+
+                              <div className="h-px bg-black/10 dark:bg-white/10"></div>
+                              
+                              <div className="flex flex-col gap-2">
+                                  <label className="text-xs font-bold opacity-70">Custom URL Slug</label>
+                                  <div className="flex items-center gap-1">
+                                      <span className="text-xs opacity-50">regalforms.xyz/</span>
+                                      <input 
+                                          type="text" 
+                                          value={customSlug} 
+                                          onChange={(e) => { setCustomSlug(e.target.value); setSlugStatus('idle'); }}
+                                          placeholder="my-custom-form"
+                                          className="flex-1 p-2 rounded border border-black/10 dark:border-white/10 bg-transparent text-sm"
+                                      />
+                                  </div>
+                              </div>
+
+                              <div className="flex flex-col gap-2">
+                                  <label className="text-xs font-bold opacity-70">Submit Button Text</label>
                                   <input 
                                       type="text" 
-                                      value={selectedField.placeholder || ''} 
-                                      onChange={(e) => updateField(selectedField.id, { placeholder: e.target.value })}
+                                      value={form?.submitButtonText || 'Submit'} 
+                                      onChange={(e) => updateFormMeta('submitButtonText', e.target.value)}
                                       className="w-full p-2 rounded border border-black/10 dark:border-white/10 bg-transparent text-sm"
                                   />
                               </div>
-                          )}
-                          
-                          <div>
-                              <label className="text-xs font-bold opacity-70">Helper Text</label>
-                              <input 
-                                  type="text" 
-                                  value={selectedField.helperText || ''} 
-                                  onChange={(e) => updateField(selectedField.id, { helperText: e.target.value })}
-                                  className="w-full p-2 rounded border border-black/10 dark:border-white/10 bg-transparent text-sm"
-                              />
-                          </div>
-
-                          <div className="flex items-center justify-between pt-2">
-                              <label className="text-sm font-bold">Required</label>
-                              <input 
-                                  type="checkbox" 
-                                  checked={selectedField.required} 
-                                  onChange={(e) => updateField(selectedField.id, { required: e.target.checked })}
-                                  className="size-4 accent-primary"
-                              />
-                          </div>
-                          
-                          {['select', 'radio', 'checkbox'].includes(selectedField.type) && (
-                              <div className="pt-4 border-t border-black/10 dark:border-white/10">
-                                  <div className="flex justify-between items-center mb-2">
-                                      <label className="text-xs font-bold opacity-70">Options</label>
-                                      <button 
-                                        onClick={() => handleAiGenerateOptions(selectedField.id, selectedField.label)}
-                                        className="text-[10px] font-bold text-primary flex items-center gap-1 hover:underline"
-                                      >
-                                          <span className="material-symbols-outlined text-xs">auto_awesome</span> Generate
-                                      </button>
-                                  </div>
-                                  <div className="flex flex-col gap-2">
-                                      {selectedField.options?.map((opt, i) => (
-                                          <div key={i} className="flex gap-2">
-                                              <input 
-                                                  type="text" 
-                                                  value={opt} 
-                                                  onChange={(e) => {
-                                                      const newOpts = [...(selectedField.options || [])];
-                                                      newOpts[i] = e.target.value;
-                                                      updateField(selectedField.id, { options: newOpts });
-                                                  }}
-                                                  className="flex-1 p-1.5 rounded border border-black/10 dark:border-white/10 bg-transparent text-sm"
-                                              />
-                                              <button 
-                                                  onClick={() => {
-                                                      const newOpts = selectedField.options?.filter((_, idx) => idx !== i);
-                                                      updateField(selectedField.id, { options: newOpts });
-                                                  }}
-                                                  className="text-red-500 hover:bg-red-50 p-1 rounded"
-                                              >
-                                                  <span className="material-symbols-outlined text-sm">close</span>
-                                              </button>
-                                          </div>
+                              
+                              <div className="flex flex-col gap-2">
+                                  <label className="text-xs font-bold opacity-70">Border Radius</label>
+                                  <div className="flex gap-1 p-1 bg-black/5 rounded-lg">
+                                      {['none', 'sm', 'md', 'lg', 'full'].map((r) => (
+                                          <button 
+                                              key={r} 
+                                              onClick={() => updateTheme({ borderRadius: r as any })}
+                                              className={`flex-1 py-1 rounded text-[10px] uppercase font-bold ${form?.theme?.borderRadius === r ? 'bg-white shadow-sm text-black' : 'text-black/50 hover:text-black'}`}
+                                          >
+                                              {r}
+                                          </button>
                                       ))}
-                                      <button 
-                                          onClick={() => updateField(selectedField.id, { options: [...(selectedField.options || []), 'New Option'] })}
-                                          className="text-xs font-bold text-primary hover:underline text-left mt-1"
-                                      >
-                                          + Add Option
-                                      </button>
                                   </div>
                               </div>
-                          )}
-
-                          {selectedField.type === 'html' && (
+                              
+                               <div className="flex flex-col gap-2">
+                                  <label className="text-xs font-bold opacity-70">Font Family</label>
+                                  <div className="flex gap-1 p-1 bg-black/5 rounded-lg">
+                                      {['sans', 'serif', 'mono'].map((f) => (
+                                          <button 
+                                              key={f} 
+                                              onClick={() => updateTheme({ fontFamily: f as any })}
+                                              className={`flex-1 py-1 rounded text-[10px] uppercase font-bold ${form?.theme?.fontFamily === f ? 'bg-white shadow-sm text-black' : 'text-black/50 hover:text-black'}`}
+                                          >
+                                              {f}
+                                          </button>
+                                      ))}
+                                  </div>
+                              </div>
+                          </div>
+                       </div>
+                  ) : selectedField ? (
+                      // Field Properties Content
+                      <div className="p-4">
+                          <div className="flex items-center justify-between mb-6">
+                              <h3 className="font-bold">Field Properties</h3>
+                              <button onClick={() => setSelectedId(null)}><span className="material-symbols-outlined">close</span></button>
+                          </div>
+                          <div className="flex flex-col gap-4">
                               <div>
-                                  <label className="text-xs font-bold opacity-70">HTML Content</label>
-                                  <textarea 
-                                      rows={6}
-                                      value={selectedField.content || ''} 
-                                      onChange={(e) => updateField(selectedField.id, { content: e.target.value })}
-                                      className="w-full p-2 rounded border border-black/10 dark:border-white/10 bg-transparent text-sm font-mono"
-                                  />
+                                  <label className="text-xs font-bold opacity-70">Label</label>
+                                  <div className="flex gap-2">
+                                    <input 
+                                        type="text" 
+                                        value={selectedField.label} 
+                                        onChange={(e) => updateField(selectedField.id, { label: e.target.value })}
+                                        className="w-full p-2 rounded border border-black/10 dark:border-white/10 bg-transparent text-sm"
+                                    />
+                                    <button 
+                                        onClick={() => handleAiOptimizeLabel(selectedField.id, selectedField.label)}
+                                        disabled={aiToolLoading}
+                                        className="p-2 bg-primary/10 text-primary rounded hover:bg-primary/20" 
+                                        title="AI Rewrite"
+                                    >
+                                        <span className={`material-symbols-outlined text-lg ${aiToolLoading ? 'animate-spin' : ''}`}>auto_fix_high</span>
+                                    </button>
+                                  </div>
                               </div>
-                          )}
-                          
-                          {selectedField.type === 'product' && (
-                              <div className="flex flex-col gap-3 pt-2 border-t border-black/10 dark:border-white/10">
+                              
+                              {['text','email','url','number','phone','textarea'].includes(selectedField.type) && (
                                   <div>
-                                      <label className="text-xs font-bold opacity-70">Price</label>
-                                      <input type="number" value={selectedField.price} onChange={(e) => updateField(selectedField.id, { price: Number(e.target.value) })} className="w-full p-2 rounded border border-black/10 dark:border-white/10 bg-transparent text-sm" />
+                                      <label className="text-xs font-bold opacity-70">Placeholder</label>
+                                      <input 
+                                          type="text" 
+                                          value={selectedField.placeholder || ''} 
+                                          onChange={(e) => updateField(selectedField.id, { placeholder: e.target.value })}
+                                          className="w-full p-2 rounded border border-black/10 dark:border-white/10 bg-transparent text-sm"
+                                      />
                                   </div>
-                                  <div>
-                                      <label className="text-xs font-bold opacity-70">Currency</label>
-                                      <input type="text" value={selectedField.currency} onChange={(e) => updateField(selectedField.id, { currency: e.target.value })} className="w-full p-2 rounded border border-black/10 dark:border-white/10 bg-transparent text-sm" />
-                                  </div>
-                              </div>
-                          )}
-
-                          {/* Logic Rules Section */}
-                          <div className="pt-4 border-t border-black/10 dark:border-white/10 mt-2">
-                              <div className="flex justify-between items-center mb-2">
-                                  <label className="text-xs font-bold opacity-70 flex items-center gap-1">
-                                      <span className="material-symbols-outlined text-sm">call_split</span> Logic
-                                  </label>
-                                  <button onClick={() => addLogicRule(selectedField.id)} className="text-xs text-primary font-bold hover:underline">+ Add Rule</button>
-                              </div>
-                              {selectedField.logic && selectedField.logic.length > 0 ? (
-                                  <div className="flex flex-col gap-2">
-                                      {selectedField.logic.map((rule, i) => (
-                                          <div key={i} className="p-2 bg-black/5 dark:bg-white/5 rounded text-xs flex flex-col gap-2 relative group">
-                                              <button onClick={() => removeLogicRule(selectedField.id, i)} className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 text-red-500"><span className="material-symbols-outlined text-sm">close</span></button>
-                                              <div className="flex items-center gap-1">
-                                                  <select 
-                                                      value={rule.action}
-                                                      onChange={(e) => updateLogicRule(selectedField.id, i, { action: e.target.value as any })}
-                                                      className="bg-transparent font-bold border-b border-black/20 outline-none"
-                                                  >
-                                                      <option value="show">Show</option>
-                                                      <option value="hide">Hide</option>
-                                                  </select>
-                                                  <span>this field if</span>
-                                              </div>
-                                              <select 
-                                                  value={rule.fieldId}
-                                                  onChange={(e) => updateLogicRule(selectedField.id, i, { fieldId: e.target.value })}
-                                                  className="w-full p-1 bg-white dark:bg-black rounded border border-black/10"
-                                              >
-                                                  <option value="">Select Field</option>
-                                                  {form?.fields.filter(f => f.id !== selectedField.id).map(f => (
-                                                      <option key={f.id} value={f.id}>{f.label}</option>
-                                                  ))}
-                                              </select>
-                                              <div className="flex gap-1">
-                                                  <select 
-                                                      value={rule.condition}
-                                                      onChange={(e) => updateLogicRule(selectedField.id, i, { condition: e.target.value as any })}
-                                                      className="flex-1 p-1 bg-white dark:bg-black rounded border border-black/10"
-                                                  >
-                                                      <option value="equals">Equals</option>
-                                                      <option value="not_equals">Not Equals</option>
-                                                      <option value="contains">Contains</option>
-                                                  </select>
-                                                  <input 
-                                                      type="text"
-                                                      value={rule.value}
-                                                      onChange={(e) => updateLogicRule(selectedField.id, i, { value: e.target.value })}
-                                                      placeholder="Value"
-                                                      className="flex-1 p-1 bg-white dark:bg-black rounded border border-black/10"
-                                                  />
-                                              </div>
-                                          </div>
-                                      ))}
-                                  </div>
-                              ) : (
-                                  <p className="text-xs opacity-50 italic">No logic rules defined.</p>
                               )}
-                          </div>
-                      </div>
-                  </div>
-              )}
-
-              {/* Settings Panel (Right Side - only visible if Form Settings clicked) */}
-              {isFormSettingsSelected && (
-                   <div className="fixed right-0 top-[65px] bottom-0 w-80 bg-white dark:bg-[#1e1e1e] border-l border-black/10 dark:border-white/10 p-4 overflow-y-auto z-20 animate-fade-in shadow-2xl">
-                      <div className="flex items-center justify-between mb-6">
-                          <h3 className="font-bold">Form Settings</h3>
-                          <button onClick={() => setSelectedId(null)}><span className="material-symbols-outlined">close</span></button>
-                      </div>
-                      <div className="flex flex-col gap-6">
-                          <div className="flex flex-col gap-2">
-                              <label className="text-xs font-bold opacity-70">Logo</label>
-                              <div className="flex items-center gap-3">
-                                  {form?.theme?.logo ? (
-                                      <img src={form.theme.logo} alt="Logo" className="h-12 w-12 object-contain bg-black/5 rounded" />
-                                  ) : (
-                                      <div className="h-12 w-12 bg-black/5 rounded flex items-center justify-center text-xs text-center p-1">No Logo</div>
-                                  )}
-                                  <label className="flex-1 cursor-pointer bg-black/5 hover:bg-black/10 py-2 px-4 rounded text-xs font-bold text-center transition-colors">
-                                      Upload Logo
-                                      <input type="file" className="hidden" accept="image/*" ref={logoInputRef} onChange={(e) => handleAssetUpload(e, 'logo')} />
-                                  </label>
-                              </div>
-                          </div>
-
-                          <div className="flex flex-col gap-2">
-                              <label className="text-xs font-bold opacity-70">Cover Image</label>
-                              {form?.theme?.coverImage ? (
-                                  <div className="h-24 w-full bg-cover bg-center rounded relative group">
-                                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                          <button onClick={() => updateTheme({ coverImage: '' })} className="text-white text-xs font-bold hover:underline">Remove</button>
-                                      </div>
-                                      <img src={form.theme.coverImage} className="h-full w-full object-cover rounded hidden" /> 
-                                      {/* Using div bg instead of img tag for cover usually better for layout */}
-                                      <div className="h-full w-full bg-cover bg-center rounded" style={{ backgroundImage: `url(${form.theme.coverImage})` }}></div>
-                                  </div>
-                              ) : (
-                                  <div className="h-24 w-full bg-black/5 rounded flex items-center justify-center text-xs opacity-50">No Cover Image</div>
-                              )}
-                              <label className="cursor-pointer bg-black/5 hover:bg-black/10 py-2 px-4 rounded text-xs font-bold text-center transition-colors">
-                                  Upload Cover
-                                  <input type="file" className="hidden" accept="image/*" ref={coverInputRef} onChange={(e) => handleAssetUpload(e, 'cover')} />
-                              </label>
-                              {uploadingAsset && <p className="text-xs text-primary animate-pulse">Uploading...</p>}
-                          </div>
-
-                          <div className="h-px bg-black/10 dark:bg-white/10"></div>
-                          
-                          <div className="flex flex-col gap-2">
-                              <label className="text-xs font-bold opacity-70">Custom URL Slug</label>
-                              <div className="flex items-center gap-1">
-                                  <span className="text-xs opacity-50">regalforms.xyz/</span>
+                              
+                              <div>
+                                  <label className="text-xs font-bold opacity-70">Helper Text</label>
                                   <input 
                                       type="text" 
-                                      value={customSlug} 
-                                      onChange={(e) => { setCustomSlug(e.target.value); setSlugStatus('idle'); }}
-                                      placeholder="my-custom-form"
-                                      className="flex-1 p-2 rounded border border-black/10 dark:border-white/10 bg-transparent text-sm"
+                                      value={selectedField.helperText || ''} 
+                                      onChange={(e) => updateField(selectedField.id, { helperText: e.target.value })}
+                                      className="w-full p-2 rounded border border-black/10 dark:border-white/10 bg-transparent text-sm"
                                   />
                               </div>
-                          </div>
 
-                          <div className="flex flex-col gap-2">
-                              <label className="text-xs font-bold opacity-70">Submit Button Text</label>
-                              <input 
-                                  type="text" 
-                                  value={form?.submitButtonText || 'Submit'} 
-                                  onChange={(e) => updateFormMeta('submitButtonText', e.target.value)}
-                                  className="w-full p-2 rounded border border-black/10 dark:border-white/10 bg-transparent text-sm"
-                              />
-                          </div>
-                          
-                          <div className="flex flex-col gap-2">
-                              <label className="text-xs font-bold opacity-70">Border Radius</label>
-                              <div className="flex gap-1 p-1 bg-black/5 rounded-lg">
-                                  {['none', 'sm', 'md', 'lg', 'full'].map((r) => (
-                                      <button 
-                                          key={r} 
-                                          onClick={() => updateTheme({ borderRadius: r as any })}
-                                          className={`flex-1 py-1 rounded text-[10px] uppercase font-bold ${form?.theme?.borderRadius === r ? 'bg-white shadow-sm text-black' : 'text-black/50 hover:text-black'}`}
-                                      >
-                                          {r}
-                                      </button>
-                                  ))}
+                              <div className="flex items-center justify-between pt-2">
+                                  <label className="text-sm font-bold">Required</label>
+                                  <input 
+                                      type="checkbox" 
+                                      checked={selectedField.required} 
+                                      onChange={(e) => updateField(selectedField.id, { required: e.target.checked })}
+                                      className="size-4 accent-primary"
+                                  />
                               </div>
-                          </div>
-                          
-                           <div className="flex flex-col gap-2">
-                              <label className="text-xs font-bold opacity-70">Font Family</label>
-                              <div className="flex gap-1 p-1 bg-black/5 rounded-lg">
-                                  {['sans', 'serif', 'mono'].map((f) => (
-                                      <button 
-                                          key={f} 
-                                          onClick={() => updateTheme({ fontFamily: f as any })}
-                                          className={`flex-1 py-1 rounded text-[10px] uppercase font-bold ${form?.theme?.fontFamily === f ? 'bg-white shadow-sm text-black' : 'text-black/50 hover:text-black'}`}
-                                      >
-                                          {f}
-                                      </button>
-                                  ))}
+                              
+                              {['select', 'radio', 'checkbox'].includes(selectedField.type) && (
+                                  <div className="pt-4 border-t border-black/10 dark:border-white/10">
+                                      <div className="flex justify-between items-center mb-2">
+                                          <label className="text-xs font-bold opacity-70">Options</label>
+                                          <button 
+                                            onClick={() => handleAiGenerateOptions(selectedField.id, selectedField.label)}
+                                            className="text-[10px] font-bold text-primary flex items-center gap-1 hover:underline"
+                                          >
+                                              <span className="material-symbols-outlined text-xs">auto_awesome</span> Generate
+                                          </button>
+                                      </div>
+                                      <div className="flex flex-col gap-2">
+                                          {selectedField.options?.map((opt, i) => (
+                                              <div key={i} className="flex gap-2">
+                                                  <input 
+                                                      type="text" 
+                                                      value={opt} 
+                                                      onChange={(e) => {
+                                                          const newOpts = [...(selectedField.options || [])];
+                                                          newOpts[i] = e.target.value;
+                                                          updateField(selectedField.id, { options: newOpts });
+                                                      }}
+                                                      className="flex-1 p-1.5 rounded border border-black/10 dark:border-white/10 bg-transparent text-sm"
+                                                  />
+                                                  <button 
+                                                      onClick={() => {
+                                                          const newOpts = selectedField.options?.filter((_, idx) => idx !== i);
+                                                          updateField(selectedField.id, { options: newOpts });
+                                                      }}
+                                                      className="text-red-500 hover:bg-red-50 p-1 rounded"
+                                                  >
+                                                      <span className="material-symbols-outlined text-sm">close</span>
+                                                  </button>
+                                              </div>
+                                          ))}
+                                          <button 
+                                              onClick={() => updateField(selectedField.id, { options: [...(selectedField.options || []), 'New Option'] })}
+                                              className="text-xs font-bold text-primary hover:underline text-left mt-1"
+                                          >
+                                              + Add Option
+                                          </button>
+                                      </div>
+                                  </div>
+                              )}
+
+                              {selectedField.type === 'html' && (
+                                  <div>
+                                      <label className="text-xs font-bold opacity-70">HTML Content</label>
+                                      <textarea 
+                                          rows={6}
+                                          value={selectedField.content || ''} 
+                                          onChange={(e) => updateField(selectedField.id, { content: e.target.value })}
+                                          className="w-full p-2 rounded border border-black/10 dark:border-white/10 bg-transparent text-sm font-mono"
+                                      />
+                                  </div>
+                              )}
+                              
+                              {selectedField.type === 'product' && (
+                                  <div className="flex flex-col gap-3 pt-2 border-t border-black/10 dark:border-white/10">
+                                      <div>
+                                          <label className="text-xs font-bold opacity-70">Price</label>
+                                          <input type="number" value={selectedField.price} onChange={(e) => updateField(selectedField.id, { price: Number(e.target.value) })} className="w-full p-2 rounded border border-black/10 dark:border-white/10 bg-transparent text-sm" />
+                                      </div>
+                                      <div>
+                                          <label className="text-xs font-bold opacity-70">Currency</label>
+                                          <input type="text" value={selectedField.currency} onChange={(e) => updateField(selectedField.id, { currency: e.target.value })} className="w-full p-2 rounded border border-black/10 dark:border-white/10 bg-transparent text-sm" />
+                                      </div>
+                                  </div>
+                              )}
+
+                              {/* Logic Rules Section */}
+                              <div className="pt-4 border-t border-black/10 dark:border-white/10 mt-2">
+                                  <div className="flex justify-between items-center mb-2">
+                                      <label className="text-xs font-bold opacity-70 flex items-center gap-1">
+                                          <span className="material-symbols-outlined text-sm">call_split</span> Logic
+                                      </label>
+                                      <button onClick={() => addLogicRule(selectedField.id)} className="text-xs text-primary font-bold hover:underline">+ Add Rule</button>
+                                  </div>
+                                  {selectedField.logic && selectedField.logic.length > 0 ? (
+                                      <div className="flex flex-col gap-2">
+                                          {selectedField.logic.map((rule, i) => (
+                                              <div key={i} className="p-2 bg-black/5 dark:bg-white/5 rounded text-xs flex flex-col gap-2 relative group">
+                                                  <button onClick={() => removeLogicRule(selectedField.id, i)} className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 text-red-500"><span className="material-symbols-outlined text-sm">close</span></button>
+                                                  <div className="flex items-center gap-1">
+                                                      <select 
+                                                          value={rule.action}
+                                                          onChange={(e) => updateLogicRule(selectedField.id, i, { action: e.target.value as any })}
+                                                          className="bg-transparent font-bold border-b border-black/20 outline-none"
+                                                      >
+                                                          <option value="show">Show</option>
+                                                          <option value="hide">Hide</option>
+                                                      </select>
+                                                      <span>this field if</span>
+                                                  </div>
+                                                  <select 
+                                                      value={rule.fieldId}
+                                                      onChange={(e) => updateLogicRule(selectedField.id, i, { fieldId: e.target.value })}
+                                                      className="w-full p-1 bg-white dark:bg-black rounded border border-black/10"
+                                                  >
+                                                      <option value="">Select Field</option>
+                                                      {form?.fields.filter(f => f.id !== selectedField.id).map(f => (
+                                                          <option key={f.id} value={f.id}>{f.label}</option>
+                                                      ))}
+                                                  </select>
+                                                  <div className="flex gap-1">
+                                                      <select 
+                                                          value={rule.condition}
+                                                          onChange={(e) => updateLogicRule(selectedField.id, i, { condition: e.target.value as any })}
+                                                          className="flex-1 p-1 bg-white dark:bg-black rounded border border-black/10"
+                                                      >
+                                                          <option value="equals">Equals</option>
+                                                          <option value="not_equals">Not Equals</option>
+                                                          <option value="contains">Contains</option>
+                                                      </select>
+                                                      <input 
+                                                          type="text"
+                                                          value={rule.value}
+                                                          onChange={(e) => updateLogicRule(selectedField.id, i, { value: e.target.value })}
+                                                          placeholder="Value"
+                                                          className="flex-1 p-1 bg-white dark:bg-black rounded border border-black/10"
+                                                      />
+                                                  </div>
+                                              </div>
+                                          ))}
+                                      </div>
+                                  ) : (
+                                      <p className="text-xs opacity-50 italic">No logic rules defined.</p>
+                                  )}
                               </div>
                           </div>
                       </div>
-                   </div>
-              )}
-          </main>
+                  ) : null}
+               </aside>
+          )}
       </div>
 
       {/* Share Modal */}
