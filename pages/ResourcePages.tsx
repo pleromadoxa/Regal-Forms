@@ -3,6 +3,24 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { GoogleGenAI } from '@google/genai';
 
+// --- Helper: Simple Markdown Formatter ---
+// Parses simple markdown bolding (**text**) and line breaks for the bot
+const formatMessage = (text: string) => {
+    // Escape HTML first to prevent XSS (basic)
+    let safeText = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    
+    // Bold
+    safeText = safeText.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+    
+    // Code blocks (inline)
+    safeText = safeText.replace(/`(.*?)`/g, "<code class='bg-black/10 dark:bg-white/10 px-1 rounded font-mono text-xs'>$1</code>");
+    
+    // Line breaks
+    safeText = safeText.replace(/\n/g, "<br />");
+
+    return <span dangerouslySetInnerHTML={{ __html: safeText }} />;
+};
+
 // --- Blog Page ---
 export const BlogPage: React.FC = () => {
   const posts = [
@@ -44,11 +62,18 @@ export const BlogPage: React.FC = () => {
 const SupportBot: React.FC = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState<{role: 'user'|'model', text: string}[]>([
-        { role: 'model', text: "Hi there! I'm Regal AI. How can I help you with Regal Forms today?" }
+        { role: 'model', text: "👋 Hi there! I'm Regal AI. Ask me anything about building forms, integrations, or your account." }
     ]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    const suggestions = [
+        "How do I create a form?",
+        "Connect to Google Sheets",
+        "Reset my password",
+        "Pricing plans"
+    ];
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -58,24 +83,40 @@ const SupportBot: React.FC = () => {
         if (isOpen) scrollToBottom();
     }, [messages, isOpen]);
 
-    const handleSend = async (e?: React.FormEvent) => {
-        e?.preventDefault();
-        if (!input.trim()) return;
+    const handleSend = async (textOverride?: string) => {
+        const userText = textOverride || input.trim();
+        if (!userText) return;
         
-        const userMsg = input.trim();
         setInput('');
-        setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
+        setMessages(prev => [...prev, { role: 'user', text: userText }]);
         setIsLoading(true);
 
+        const apiKey = process.env.API_KEY;
+        if (!apiKey) {
+             setMessages(prev => [...prev, { role: 'model', text: "I'm sorry, but I cannot connect to the server right now (API Key missing). Please contact support manually." }]);
+             setIsLoading(false);
+             return;
+        }
+
         try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+            const ai = new GoogleGenAI({ apiKey });
             const prompt = `
-                You are Regal AI, a helpful and friendly customer support bot for "Regal Forms", a SaaS form builder.
-                Regal Forms features include: Drag-and-drop builder, AI form generation, Analytics, Templates, Integrations (Google Sheets, Slack, Zapier), and User Management.
+                You are "Regal AI", the advanced support assistant for Regal Forms.
                 
-                Answer the user's question concisely and professionally. If you don't know the answer, suggest they contact human support at support@regalforms.xyz.
+                System Knowledge:
+                - **Core Feature:** Drag-and-drop form builder, AI form generation from text prompts.
+                - **Integrations:** Google Sheets, Slack, Mailchimp, Zapier (via Webhooks), Notion, HubSpot.
+                - **Pricing:** Free, Pro (Unlimited forms/AI), Enterprise.
+                - **Common Issues:** 
+                  - "Service storage not available": Usually network issue or firebase config.
+                  - "Permission denied": User needs to log in.
                 
-                User Question: ${userMsg}
+                Tone: Professional, friendly, emoji-friendly, concise.
+                Formatting: Use bolding (**text**) for key terms. Use lists if explaining steps.
+                
+                If the user asks to talk to a human, tell them to visit the "Contact" page.
+                
+                User Query: ${userText}
             `;
 
             const response = await ai.models.generateContent({
@@ -83,66 +124,111 @@ const SupportBot: React.FC = () => {
                 contents: prompt
             });
 
-            const reply = response.text || "I'm having trouble connecting right now. Please try again later.";
+            const reply = response.text || "I'm having trouble thinking right now. Please try again.";
             setMessages(prev => [...prev, { role: 'model', text: reply }]);
 
         } catch (err) {
             console.error(err);
-            setMessages(prev => [...prev, { role: 'model', text: "Sorry, I encountered an error. Please contact human support." }]);
+            setMessages(prev => [...prev, { role: 'model', text: "I encountered a connection error. Please check your internet or try again later." }]);
         } finally {
             setIsLoading(false);
         }
     };
 
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        handleSend();
+    };
+
     return (
-        <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-4">
+        <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-4 font-display">
             {isOpen && (
-                <div className="w-80 sm:w-96 h-[500px] bg-white dark:bg-[#1e1e1e] rounded-2xl shadow-2xl border border-black/10 dark:border-white/10 flex flex-col overflow-hidden animate-slide-up">
+                <div className="w-[90vw] sm:w-[400px] h-[550px] bg-white dark:bg-[#1e1e1e] rounded-2xl shadow-2xl border border-black/10 dark:border-white/10 flex flex-col overflow-hidden animate-slide-up relative">
                     {/* Header */}
-                    <div className="p-4 bg-primary text-white flex justify-between items-center">
-                        <div className="flex items-center gap-2">
-                            <span className="material-symbols-outlined">smart_toy</span>
-                            <span className="font-bold">Regal AI Support</span>
+                    <div className="p-4 bg-gradient-to-r from-secondary to-purple-700 text-white flex justify-between items-center shadow-md z-10">
+                        <div className="flex items-center gap-3">
+                            <div className="size-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/30">
+                                <span className="material-symbols-outlined text-xl">smart_toy</span>
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-sm">Regal AI</h3>
+                                <div className="flex items-center gap-1.5">
+                                    <span className="size-2 bg-green-400 rounded-full animate-pulse"></span>
+                                    <span className="text-xs opacity-90">Online</span>
+                                </div>
+                            </div>
                         </div>
-                        <button onClick={() => setIsOpen(false)} className="hover:opacity-70">
+                        <button onClick={() => setIsOpen(false)} className="hover:bg-white/20 p-1 rounded-full transition-colors">
                             <span className="material-symbols-outlined">close</span>
                         </button>
                     </div>
 
                     {/* Chat Area */}
-                    <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 bg-background-light dark:bg-black/20">
+                    <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 bg-[#f8f9fa] dark:bg-[#121212]">
+                        <div className="text-center text-xs text-black/40 dark:text-white/40 my-2">
+                            Today
+                        </div>
+                        
                         {messages.map((msg, i) => (
                             <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`max-w-[85%] p-3 rounded-xl text-sm ${msg.role === 'user' ? 'bg-primary text-white rounded-tr-none' : 'bg-white dark:bg-white/10 border border-black/5 dark:border-white/5 rounded-tl-none shadow-sm'}`}>
-                                    {msg.text}
+                                {msg.role === 'model' && (
+                                    <div className="size-8 rounded-full bg-secondary/10 text-secondary flex items-center justify-center mr-2 border border-secondary/20 shrink-0 mt-1">
+                                        <span className="material-symbols-outlined text-sm">smart_toy</span>
+                                    </div>
+                                )}
+                                <div className={`max-w-[85%] p-3.5 rounded-2xl text-sm leading-relaxed shadow-sm ${
+                                    msg.role === 'user' 
+                                    ? 'bg-secondary text-white rounded-tr-sm' 
+                                    : 'bg-white dark:bg-[#2a2a2a] border border-black/5 dark:border-white/5 rounded-tl-sm text-black/80 dark:text-white/90'
+                                }`}>
+                                    {formatMessage(msg.text)}
                                 </div>
                             </div>
                         ))}
+                        
                         {isLoading && (
                             <div className="flex justify-start">
-                                <div className="bg-white dark:bg-white/10 p-3 rounded-xl rounded-tl-none flex gap-1 items-center">
-                                    <div className="size-2 bg-black/40 dark:bg-white/40 rounded-full animate-bounce"></div>
-                                    <div className="size-2 bg-black/40 dark:bg-white/40 rounded-full animate-bounce delay-100"></div>
-                                    <div className="size-2 bg-black/40 dark:bg-white/40 rounded-full animate-bounce delay-200"></div>
+                                 <div className="size-8 rounded-full bg-secondary/10 text-secondary flex items-center justify-center mr-2 border border-secondary/20 shrink-0">
+                                    <span className="material-symbols-outlined text-sm">smart_toy</span>
+                                </div>
+                                <div className="bg-white dark:bg-[#2a2a2a] p-4 rounded-2xl rounded-tl-sm shadow-sm flex gap-1.5 items-center border border-black/5 dark:border-white/5">
+                                    <div className="size-2 bg-secondary/60 rounded-full animate-bounce"></div>
+                                    <div className="size-2 bg-secondary/60 rounded-full animate-bounce delay-100"></div>
+                                    <div className="size-2 bg-secondary/60 rounded-full animate-bounce delay-200"></div>
                                 </div>
                             </div>
                         )}
                         <div ref={messagesEndRef} />
                     </div>
 
-                    {/* Input */}
-                    <form onSubmit={handleSend} className="p-3 border-t border-black/10 dark:border-white/10 bg-white dark:bg-[#1e1e1e] flex gap-2">
+                    {/* Suggestions (Only show if few messages) */}
+                    {messages.length < 3 && !isLoading && (
+                        <div className="px-4 pb-2 bg-[#f8f9fa] dark:bg-[#121212] flex gap-2 overflow-x-auto no-scrollbar">
+                            {suggestions.map((s, i) => (
+                                <button 
+                                    key={i} 
+                                    onClick={() => handleSend(s)}
+                                    className="whitespace-nowrap px-3 py-1.5 rounded-full bg-white dark:bg-white/10 border border-black/10 dark:border-white/10 text-xs font-bold text-secondary hover:bg-secondary hover:text-white transition-colors shadow-sm"
+                                >
+                                    {s}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Input Area */}
+                    <form onSubmit={handleSubmit} className="p-3 bg-white dark:bg-[#1e1e1e] border-t border-black/10 dark:border-white/10 flex gap-2 items-center">
                         <input 
                             type="text" 
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
-                            placeholder="Type a message..."
-                            className="flex-1 bg-background-light dark:bg-black/20 rounded-full px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-primary"
+                            placeholder="Type your question..."
+                            className="flex-1 bg-black/5 dark:bg-white/5 rounded-full px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-secondary/50 border border-transparent focus:bg-white dark:focus:bg-black transition-all"
                         />
                         <button 
                             type="submit"
                             disabled={isLoading || !input.trim()}
-                            className="size-9 rounded-full bg-primary text-white flex items-center justify-center hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="size-10 rounded-full bg-secondary text-white flex items-center justify-center hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:scale-105 transition-all"
                         >
                             <span className="material-symbols-outlined text-sm">send</span>
                         </button>
@@ -152,21 +238,31 @@ const SupportBot: React.FC = () => {
 
             <button 
                 onClick={() => setIsOpen(!isOpen)}
-                className="size-14 rounded-full bg-primary text-white shadow-xl flex items-center justify-center hover:scale-110 transition-transform"
+                className="group relative size-16 rounded-full bg-secondary text-white shadow-xl flex items-center justify-center hover:scale-110 transition-all hover:rotate-90"
             >
                 {isOpen ? (
-                    <span className="material-symbols-outlined text-2xl">close</span>
+                    <span className="material-symbols-outlined text-3xl">close</span>
                 ) : (
-                    <span className="material-symbols-outlined text-2xl">chat</span>
+                    <>
+                        <span className="material-symbols-outlined text-3xl">chat_bubble</span>
+                        <span className="absolute top-0 right-0 size-4 bg-red-500 rounded-full border-2 border-white dark:border-background-dark"></span>
+                    </>
                 )}
             </button>
             <style>{`
                 @keyframes slideUp {
-                    from { opacity: 0; transform: translateY(20px); }
-                    to { opacity: 1; transform: translateY(0); }
+                    from { opacity: 0; transform: translateY(20px) scale(0.95); }
+                    to { opacity: 1; transform: translateY(0) scale(1); }
                 }
                 .animate-slide-up {
-                    animation: slideUp 0.3s ease-out forwards;
+                    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                }
+                .no-scrollbar::-webkit-scrollbar {
+                    display: none;
+                }
+                .no-scrollbar {
+                    -ms-overflow-style: none;
+                    scrollbar-width: none;
                 }
             `}</style>
         </div>
@@ -227,31 +323,6 @@ const HELP_ARTICLES: Record<string, Article[]> = {
                     </ul>
                 </div>
             )
-        },
-        {
-            id: 'gs4',
-            title: 'Viewing submissions',
-            content: (
-                <div className="space-y-4">
-                    <p>To see who has responded to your forms:</p>
-                    <ol className="list-decimal pl-5 space-y-2">
-                        <li>Go to the <strong>Submissions</strong> page from the main menu.</li>
-                        <li>Select the form you want to view from the sidebar.</li>
-                        <li>You will see a table of the most recent responses. Click "View" on any row to see the full details in a modal.</li>
-                        <li>You can also click "Export CSV" to download the data for analysis in Excel.</li>
-                    </ol>
-                </div>
-            )
-        },
-        {
-            id: 'gs5',
-            title: 'Using Templates',
-            content: (
-                <div className="space-y-4">
-                    <p>Don't want to start from scratch? Use a template:</p>
-                    <p>Navigate to the <strong>Templates</strong> page. Browse categories like "Business", "Education", or "HR". Click "Use Template" on any card to load that structure directly into the builder. You can then modify it to suit your specific needs.</p>
-                </div>
-            )
         }
     ],
     'Account & Billing': [
@@ -276,36 +347,6 @@ const HELP_ARTICLES: Record<string, Article[]> = {
                 <div className="space-y-4">
                     <p>To update your card on file:</p>
                     <p>Navigate to Profile Settings &gt; Billing. Click "Update Payment Method". We use Stripe for secure payment processing, so your card details are never stored on our servers directly.</p>
-                </div>
-            )
-        },
-        {
-            id: 'ab3',
-            title: 'Resetting password',
-            content: (
-                <div className="space-y-4">
-                    <p>If you've forgotten your password:</p>
-                    <p>On the Login screen, click "Forgot Password?". Enter your email address, and we will send you a secure link to set a new password. If you are logged in, you can change your password from the <strong>Security</strong> tab in Profile Settings.</p>
-                </div>
-            )
-        },
-        {
-            id: 'ab4',
-            title: 'Managing team members',
-            content: (
-                <div className="space-y-4">
-                    <p>Team collaboration is a Pro feature.</p>
-                    <p>In the Form Settings &gt; Collaboration tab, you can invite other users by email to edit specific forms. They will receive an email notification and see the form in their dashboard.</p>
-                </div>
-            )
-        },
-        {
-            id: 'ab5',
-            title: 'Cancelling subscription',
-            content: (
-                <div className="space-y-4">
-                    <p>We're sorry to see you go.</p>
-                    <p>To cancel, go to Profile Settings &gt; Billing and click "Cancel Subscription". Your plan will remain active until the end of the current billing cycle, after which your account will revert to the Free tier.</p>
                 </div>
             )
         }
@@ -335,36 +376,6 @@ const HELP_ARTICLES: Record<string, Article[]> = {
                     <p>Click on a field in the builder to open its settings. Scroll down to "Conditional Logic". Click "Add Condition". For example: <em>Show this field IF "Satisfaction" Equals "Dissatisfied"</em>.</p>
                 </div>
             )
-        },
-        {
-            id: 'fb3',
-            title: 'Customizing the design',
-            content: (
-                <div className="space-y-4">
-                    <p>Currently, Regal Forms uses a clean, standard layout optimized for conversion.</p>
-                    <p>You can customize the "Presentation" settings (Progress Bar, Shuffle Questions) in the Form Settings menu. Future updates will include custom color themes and font selection.</p>
-                </div>
-            )
-        },
-        {
-            id: 'fb4',
-            title: 'Setting up email notifications',
-            content: (
-                <div className="space-y-4">
-                    <p>To get notified when someone submits a form:</p>
-                    <p>This feature is enabled by default for the form creator. To change this or add recipients, go to Form Settings &gt; Notifications (coming soon). Currently, check your dashboard for real-time updates.</p>
-                </div>
-            )
-        },
-        {
-            id: 'fb5',
-            title: 'Redirecting after submission',
-            content: (
-                <div className="space-y-4">
-                    <p>By default, users see a "Thank You" message after submitting.</p>
-                    <p>You can customize this message in Form Settings &gt; Responses &gt; Confirmation Message. Redirecting to a custom URL is a Pro feature available in the advanced settings.</p>
-                </div>
-            )
         }
     ],
     'Integrations': [
@@ -386,150 +397,11 @@ const HELP_ARTICLES: Record<string, Article[]> = {
         },
         {
             id: 'in2',
-            title: 'Setting up Slack alerts',
-            content: (
-                <div className="space-y-4">
-                    <p>Get notified in your team channel.</p>
-                    <p>Create an Incoming Webhook in your Slack workspace settings. Copy the Webhook URL. In Regal Forms Integrations, paste this URL into the Slack configuration card. You will receive a message with submission details instantly.</p>
-                </div>
-            )
-        },
-        {
-            id: 'in3',
-            title: 'Using Webhooks',
-            content: (
-                <div className="space-y-4">
-                    <p>For custom integrations, use our generic Webhook.</p>
-                    <p>We send a POST request with a JSON body containing the form ID, submission timestamp, and all field data to any URL you specify. Useful for connecting to custom backends or automation tools like n8n.</p>
-                </div>
-            )
-        },
-        {
-            id: 'in4',
             title: 'Zapier integration guide',
             content: (
                 <div className="space-y-4">
                     <p>Connect to 5,000+ apps.</p>
                     <p>In Zapier, create a "Catch Hook" trigger. Copy the webhook URL Zapier provides. Paste this into the Zapier integration card on Regal Forms. When you test your form, Zapier will receive the data, allowing you to trigger actions in Gmail, Trello, Salesforce, and more.</p>
-                </div>
-            )
-        },
-        {
-            id: 'in5',
-            title: 'Troubleshooting integrations',
-            content: (
-                <div className="space-y-4">
-                    <p>If your data isn't syncing:</p>
-                    <ul className="list-disc pl-5 space-y-2">
-                        <li>Check that the destination URL/Sheet is valid and accessible.</li>
-                        <li>Ensure the integration is toggled to "Active" (green indicator).</li>
-                        <li>Check your spam folder for email notifications.</li>
-                        <li>Contact support if the issue persists.</li>
-                    </ul>
-                </div>
-            )
-        }
-    ],
-    'Analytics': [
-        {
-            id: 'an1',
-            title: 'Understanding submission rates',
-            content: (
-                <div className="space-y-4">
-                    <p>Submission Rate (or Conversion Rate) is calculated as <code>(Total Submissions / Total Views) * 100</code>.</p>
-                    <p>A low rate might indicate your form is too long or asking for sensitive info too early. A high rate means your form is performing well!</p>
-                </div>
-            )
-        },
-        {
-            id: 'an2',
-            title: 'Exporting data to CSV',
-            content: (
-                <div className="space-y-4">
-                    <p>Need to analyze data in Excel or SPSS?</p>
-                    <p>Go to the Submissions page, select your form, and click the "Export CSV" button in the top right. This generates a downloadable file containing all response data.</p>
-                </div>
-            )
-        },
-        {
-            id: 'an3',
-            title: 'Traffic source analysis',
-            content: (
-                <div className="space-y-4">
-                    <p>Currently, we track "Direct" traffic vs "Referral".</p>
-                    <p>In the Analytics Dashboard, you can see a breakdown. Future updates will allow for UTM parameter tracking to see exactly which marketing campaigns are driving responses.</p>
-                </div>
-            )
-        },
-        {
-            id: 'an4',
-            title: 'Device breakdown',
-            content: (
-                <div className="space-y-4">
-                    <p>Knowing if your users are on mobile or desktop is crucial.</p>
-                    <p>While we optimize all forms for mobile by default, our Analytics page (Pro feature) will show you the percentage of users on different device types.</p>
-                </div>
-            )
-        },
-        {
-            id: 'an5',
-            title: 'Reading the charts',
-            content: (
-                <div className="space-y-4">
-                    <p>The Analytics page shows a timeline of responses.</p>
-                    <p>Peaks usually correspond to when you shared the link. If you see a flat line despite traffic, check your form for broken logic or technical issues.</p>
-                </div>
-            )
-        }
-    ],
-    'Security': [
-        {
-            id: 'se1',
-            title: 'Data encryption details',
-            content: (
-                <div className="space-y-4">
-                    <p>Your data security is paramount.</p>
-                    <p>All data transmitted between your browser and Regal Forms is encrypted using TLS 1.2+. Data at rest in our databases is encrypted using AES-256 standards.</p>
-                </div>
-            )
-        },
-        {
-            id: 'se2',
-            title: 'GDPR compliance',
-            content: (
-                <div className="space-y-4">
-                    <p>We are compliant with GDPR regulations.</p>
-                    <p>As a user, you have the right to access, correct, and delete your data (right to be forgotten). You can perform these actions from the Profile Settings &gt; Data &amp; Privacy section.</p>
-                </div>
-            )
-        },
-        {
-            id: 'se3',
-            title: 'Two-factor authentication',
-            content: (
-                <div className="space-y-4">
-                    <p>Enhance your account security.</p>
-                    <p>2FA is coming soon. We currently support Google OAuth sign-in, which allows you to leverage Google's 2FA protections for your Regal Forms account.</p>
-                </div>
-            )
-        },
-        {
-            id: 'se4',
-            title: 'Spam protection',
-            content: (
-                <div className="space-y-4">
-                    <p>Keep your data clean.</p>
-                    <p>We use automated rate limiting and CAPTCHA-like behavior analysis to prevent bots from flooding your forms with fake submissions.</p>
-                </div>
-            )
-        },
-        {
-            id: 'se5',
-            title: 'Data retention policies',
-            content: (
-                <div className="space-y-4">
-                    <p>How long do we keep your data?</p>
-                    <p>We retain your form data as long as your account is active. If you delete a form, the data is permanently removed after 30 days (soft delete) or immediately if you perform a hard delete from settings.</p>
                 </div>
             )
         }
@@ -567,7 +439,6 @@ export const HelpCenterPage: React.FC = () => {
       }
   };
 
-  // Top 4 generic FAQs for the home view
   const topFaqs = [
     { q: "How do I export my data?", a: "You can export your personal data and form configurations from the Profile Settings page under the 'Data & Privacy' section." },
     { q: "Can I remove branding?", a: "Yes, removing branding is available on our Pro and Enterprise plans. Visit Profile Settings to upgrade." },
@@ -575,126 +446,172 @@ export const HelpCenterPage: React.FC = () => {
     { q: "How do I connect Google Sheets?", a: "Go to the 'Integrations' page, click Setup on Google Sheets, and enter your spreadsheet URL." }
   ];
 
+  const CATEGORY_ICONS: Record<string, string> = {
+      'Getting Started': 'rocket_launch',
+      'Account & Billing': 'credit_card',
+      'Form Builder': 'build_circle',
+      'Integrations': 'hub',
+      'Analytics': 'monitoring',
+      'Security': 'security'
+  };
+
   return (
-    <div className="w-full max-w-4xl mx-auto px-4 py-12 md:py-20 flex flex-col gap-8 relative min-h-screen">
-      
-      {/* Header & Search */}
-      <div className="text-center bg-primary/10 rounded-2xl p-10">
-        <h1 className="text-3xl font-bold mb-6">
-            {currentArticle ? 'Article View' : (currentCategory ? currentCategory : 'How can we help you?')}
-        </h1>
-        
-        {!currentArticle && (
-            <div className="relative max-w-xl mx-auto">
-                <input 
-                    type="text" 
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search articles (e.g. 'billing', 'integrations')" 
-                    className="w-full p-4 pl-12 rounded-lg border border-black/10 dark:border-white/10 bg-white dark:bg-black/40 focus:border-primary focus:ring-1 focus:ring-primary outline-none shadow-sm"
-                />
-                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-black/50 dark:text-white/50">search</span>
-            </div>
-        )}
+    <div className="min-h-screen bg-background-light dark:bg-background-dark">
+      {/* Hero Header */}
+      <div className="relative bg-[#0f172a] text-white py-24 px-4 overflow-hidden">
+          <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
+          <div className="max-w-4xl mx-auto text-center relative z-10">
+              <span className="inline-block py-1 px-3 rounded-full bg-secondary/20 text-secondary text-xs font-bold uppercase tracking-wider mb-4 border border-secondary/30">Help Center</span>
+              <h1 className="text-4xl md:text-6xl font-black tracking-tight mb-6">How can we help?</h1>
+              
+              {/* Search Bar */}
+              <div className="max-w-2xl mx-auto relative group">
+                  <input 
+                      type="text" 
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search for answers (e.g. 'API Key', 'Pricing')" 
+                      className="w-full p-5 pl-14 rounded-xl border-0 bg-white/10 backdrop-blur-md text-white placeholder:text-white/50 focus:bg-white focus:text-black focus:ring-4 focus:ring-secondary/50 shadow-xl transition-all outline-none text-lg"
+                  />
+                  <span className="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-white/50 group-focus-within:text-black/50 text-2xl transition-colors">search</span>
+              </div>
+          </div>
       </div>
 
-      {/* Navigation Breadcrumb / Back Button */}
-      {(currentCategory || currentArticle) && (
-          <div className="flex items-center gap-2 text-sm">
-              <button onClick={() => { setCurrentCategory(null); setCurrentArticle(null); }} className="hover:underline opacity-60">Help Center</button>
-              <span className="opacity-40">/</span>
-              {currentArticle ? (
-                  <>
-                    <button onClick={() => setCurrentArticle(null)} className="hover:underline opacity-60">{currentCategory}</button>
-                    <span className="opacity-40">/</span>
-                    <span className="font-bold text-primary">{currentArticle.title}</span>
-                  </>
-              ) : (
-                  <span className="font-bold text-primary">{currentCategory}</span>
-              )}
-              
-              <button onClick={handleBack} className="ml-auto flex items-center gap-1 text-primary font-bold hover:underline">
-                  <span className="material-symbols-outlined text-sm">arrow_back</span> Back
-              </button>
-          </div>
-      )}
+      <div className="max-w-5xl mx-auto px-4 py-12 -mt-10 relative z-20">
+          
+          {/* Navigation Breadcrumb */}
+          {(currentCategory || currentArticle) && (
+              <div className="flex items-center gap-2 text-sm mb-8 bg-white dark:bg-[#1e1e1e] p-3 rounded-lg shadow-sm w-fit border border-black/10 dark:border-white/10">
+                  <button onClick={() => { setCurrentCategory(null); setCurrentArticle(null); }} className="hover:text-secondary flex items-center gap-1 font-bold text-black/60 dark:text-white/60"><span className="material-symbols-outlined text-lg">home</span> Home</button>
+                  <span className="opacity-30">/</span>
+                  {currentArticle ? (
+                      <>
+                        <button onClick={() => setCurrentArticle(null)} className="hover:text-secondary font-bold text-black/60 dark:text-white/60">{currentCategory}</button>
+                        <span className="opacity-30">/</span>
+                        <span className="font-bold text-secondary">{currentArticle.title.substring(0, 20)}...</span>
+                      </>
+                  ) : (
+                      <span className="font-bold text-secondary">{currentCategory}</span>
+                  )}
+              </div>
+          )}
 
-      {/* --- VIEW 1: Home (Categories Grid) --- */}
-      {!currentCategory && !currentArticle && (
-        <>
-            <div className="grid sm:grid-cols-3 gap-6 animate-fade-in">
-                {categories.map((cat, i) => (
-                    <div 
-                        key={i} 
-                        onClick={() => handleCategoryClick(cat)}
-                        className="p-6 rounded-xl border border-black/10 dark:border-white/10 hover:border-primary hover:bg-primary/5 transition-all cursor-pointer text-center group"
-                    >
-                        <h3 className="font-bold text-lg group-hover:text-primary transition-colors">{cat}</h3>
-                        <p className="text-sm text-black/60 dark:text-white/60 mt-2">{HELP_ARTICLES[cat].length} articles</p>
-                    </div>
-                ))}
-            </div>
-
-            <div className="flex flex-col gap-4 mt-8">
-                <h2 className="text-2xl font-bold">Frequently Asked Questions</h2>
-                {topFaqs.map((faq, i) => (
-                    <div 
-                        key={i} 
-                        onClick={() => setActiveFaq(activeFaq === i ? null : i)}
-                        className="rounded-lg border border-black/10 dark:border-white/10 bg-white dark:bg-white/5 cursor-pointer hover:bg-black/5 dark:hover:bg-white/10 overflow-hidden transition-all"
-                    >
-                        <div className="p-4 flex justify-between items-center">
-                            <span className="font-medium">{faq.q}</span>
-                            <span className={`material-symbols-outlined transition-transform ${activeFaq === i ? 'rotate-180' : ''}`}>expand_more</span>
-                        </div>
-                        {activeFaq === i && (
-                            <div className="px-4 pb-4 text-sm text-black/70 dark:text-white/70 leading-relaxed animate-fade-in border-t border-black/5 dark:border-white/5 pt-4">
-                                {faq.a}
+          {/* --- VIEW 1: Home Categories --- */}
+          {!currentCategory && !currentArticle && (
+            <div className="animate-fade-in space-y-16">
+                {/* Categories Grid */}
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {categories.map((cat, i) => (
+                        <div 
+                            key={i} 
+                            onClick={() => handleCategoryClick(cat)}
+                            className="p-8 rounded-2xl bg-white dark:bg-[#1e1e1e] border border-black/5 dark:border-white/5 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer group"
+                        >
+                            <div className="size-14 rounded-xl bg-secondary/10 text-secondary flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                                <span className="material-symbols-outlined text-3xl">{CATEGORY_ICONS[cat] || 'article'}</span>
                             </div>
-                        )}
+                            <h3 className="font-bold text-xl group-hover:text-secondary transition-colors mb-2">{cat}</h3>
+                            <p className="text-sm text-black/60 dark:text-white/60 leading-relaxed">
+                                {HELP_ARTICLES[cat].length} articles available
+                            </p>
+                        </div>
+                    ))}
+                </div>
+
+                {/* FAQ Section */}
+                <div>
+                    <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                        <span className="material-symbols-outlined text-secondary">quiz</span> 
+                        Common Questions
+                    </h2>
+                    <div className="grid gap-4">
+                        {topFaqs.map((faq, i) => (
+                            <div 
+                                key={i} 
+                                onClick={() => setActiveFaq(activeFaq === i ? null : i)}
+                                className={`rounded-xl border transition-all cursor-pointer overflow-hidden ${activeFaq === i ? 'bg-secondary/5 border-secondary/30' : 'bg-white dark:bg-[#1e1e1e] border-black/5 dark:border-white/5 hover:border-secondary/30'}`}
+                            >
+                                <div className="p-5 flex justify-between items-center">
+                                    <span className="font-bold">{faq.q}</span>
+                                    <span className={`material-symbols-outlined transition-transform text-black/40 dark:text-white/40 ${activeFaq === i ? 'rotate-180 text-secondary' : ''}`}>expand_more</span>
+                                </div>
+                                {activeFaq === i && (
+                                    <div className="px-5 pb-5 text-sm text-black/70 dark:text-white/70 leading-relaxed animate-fade-in">
+                                        {faq.a}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
                     </div>
-                ))}
+                </div>
+
+                {/* Contact CTA */}
+                <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-8 md:p-12 text-white flex flex-col md:flex-row items-center justify-between gap-8 shadow-2xl">
+                    <div className="text-center md:text-left">
+                        <h3 className="text-2xl font-bold mb-2">Still stuck?</h3>
+                        <p className="text-white/80">Our support team is usually available 9am-5pm EST.</p>
+                    </div>
+                    <Link to="/contact" className="px-8 py-3 bg-white text-blue-700 font-bold rounded-lg shadow-lg hover:bg-blue-50 transition-colors flex items-center gap-2">
+                        <span className="material-symbols-outlined">mail</span> Contact Support
+                    </Link>
+                </div>
             </div>
-        </>
-      )}
+          )}
 
-      {/* --- VIEW 2: Category (Article List) --- */}
-      {currentCategory && !currentArticle && (
-          <div className="flex flex-col gap-4 animate-fade-in">
-              {HELP_ARTICLES[currentCategory]
-                .filter(a => a.title.toLowerCase().includes(searchQuery.toLowerCase()))
-                .map((article) => (
-                  <div 
-                      key={article.id} 
-                      onClick={() => handleArticleClick(article)}
-                      className="p-6 rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-white/5 hover:border-primary cursor-pointer flex justify-between items-center group"
-                  >
-                      <span className="font-bold text-lg group-hover:text-primary transition-colors">{article.title}</span>
-                      <span className="material-symbols-outlined text-black/30 dark:text-white/30 group-hover:text-primary">arrow_forward_ios</span>
-                  </div>
-              ))}
-              {HELP_ARTICLES[currentCategory].length === 0 && (
-                  <p className="text-center opacity-50">No articles found.</p>
-              )}
-          </div>
-      )}
-
-      {/* --- VIEW 3: Article Content --- */}
-      {currentArticle && (
-          <div className="p-8 rounded-2xl bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 animate-fade-in">
-              <h2 className="text-3xl font-black mb-6">{currentArticle.title}</h2>
-              <div className="prose dark:prose-invert max-w-none text-black/80 dark:text-white/80">
-                  {currentArticle.content}
-              </div>
-              <div className="mt-10 pt-6 border-t border-black/10 dark:border-white/10 flex justify-between items-center">
-                  <p className="text-sm opacity-60">Was this article helpful?</p>
-                  <div className="flex gap-2">
-                      <button className="px-3 py-1 rounded border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-sm">Yes</button>
-                      <button className="px-3 py-1 rounded border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-sm">No</button>
+          {/* --- VIEW 2: Article List --- */}
+          {currentCategory && !currentArticle && (
+              <div className="animate-fade-in">
+                  <h2 className="text-3xl font-black mb-8">{currentCategory}</h2>
+                  <div className="grid gap-4">
+                      {HELP_ARTICLES[currentCategory]
+                        .filter(a => a.title.toLowerCase().includes(searchQuery.toLowerCase()))
+                        .map((article) => (
+                          <div 
+                              key={article.id} 
+                              onClick={() => handleArticleClick(article)}
+                              className="p-6 rounded-xl bg-white dark:bg-[#1e1e1e] border border-black/5 dark:border-white/5 hover:border-secondary cursor-pointer flex justify-between items-center group transition-all shadow-sm"
+                          >
+                              <div className="flex items-center gap-4">
+                                  <div className="size-10 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center text-black/40 dark:text-white/40 group-hover:bg-secondary/10 group-hover:text-secondary transition-colors">
+                                      <span className="material-symbols-outlined">description</span>
+                                  </div>
+                                  <span className="font-bold text-lg group-hover:text-secondary transition-colors">{article.title}</span>
+                              </div>
+                              <span className="material-symbols-outlined text-black/20 dark:text-white/20 group-hover:translate-x-1 transition-transform">arrow_forward_ios</span>
+                          </div>
+                      ))}
+                      {HELP_ARTICLES[currentCategory].length === 0 && (
+                          <p className="text-center opacity-50 py-10">No articles found matching your search.</p>
+                      )}
                   </div>
               </div>
-          </div>
-      )}
+          )}
+
+          {/* --- VIEW 3: Article Content --- */}
+          {currentArticle && (
+              <div className="animate-fade-in max-w-3xl mx-auto">
+                  <div className="p-8 md:p-12 rounded-2xl bg-white dark:bg-[#1e1e1e] border border-black/5 dark:border-white/5 shadow-xl">
+                      <h2 className="text-3xl md:text-4xl font-black mb-8 text-secondary">{currentArticle.title}</h2>
+                      <div className="prose dark:prose-invert max-w-none text-black/80 dark:text-white/80 leading-relaxed">
+                          {currentArticle.content}
+                      </div>
+                      
+                      <div className="mt-12 pt-8 border-t border-black/10 dark:border-white/10 flex flex-col sm:flex-row justify-between items-center gap-4">
+                          <p className="text-sm opacity-60 font-medium">Was this article helpful?</p>
+                          <div className="flex gap-3">
+                              <button className="px-4 py-2 rounded-lg border border-black/10 dark:border-white/10 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-600 hover:border-green-200 text-sm font-bold transition-colors flex items-center gap-2">
+                                  <span className="material-symbols-outlined text-lg">thumb_up</span> Yes
+                              </button>
+                              <button className="px-4 py-2 rounded-lg border border-black/10 dark:border-white/10 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 hover:border-red-200 text-sm font-bold transition-colors flex items-center gap-2">
+                                  <span className="material-symbols-outlined text-lg">thumb_down</span> No
+                              </button>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          )}
+      </div>
       
       {/* Floating Support Bot */}
       <SupportBot />
