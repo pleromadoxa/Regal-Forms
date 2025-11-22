@@ -1025,44 +1025,49 @@ const BuilderPage: React.FC = () => {
                               
                               {['select', 'radio', 'checkbox'].includes(selectedField.type) && (
                                   <div className="pt-4 border-t border-black/10 dark:border-white/10">
-                                      <div className="flex justify-between items-center mb-2">
-                                          <label className="text-xs font-bold opacity-70">Options</label>
+                                      <div className="flex justify-between items-center mb-3">
+                                          <label className="text-xs font-bold opacity-70">Options List</label>
                                           <button 
                                             onClick={() => handleAiGenerateOptions(selectedField.id, selectedField.label)}
                                             className="text-[10px] font-bold text-primary flex items-center gap-1 hover:underline"
                                           >
-                                              <span className="material-symbols-outlined text-xs">auto_awesome</span> Generate
+                                              <span className="material-symbols-outlined text-xs">auto_awesome</span> AI Generate
                                           </button>
                                       </div>
                                       <div className="flex flex-col gap-2">
                                           {selectedField.options?.map((opt, i) => (
-                                              <div key={i} className="flex gap-2">
-                                                  <input 
-                                                      type="text" 
-                                                      value={opt} 
-                                                      onChange={(e) => {
-                                                          const newOpts = [...(selectedField.options || [])];
-                                                          newOpts[i] = e.target.value;
-                                                          updateField(selectedField.id, { options: newOpts });
-                                                      }}
-                                                      className="flex-1 p-1.5 rounded border border-black/10 dark:border-white/10 bg-transparent text-sm"
-                                                  />
+                                              <div key={i} className="flex items-center gap-2 group">
+                                                  <span className="text-[10px] font-mono text-black/30 dark:text-white/30 w-4 text-right select-none">{i + 1}.</span>
+                                                  <div className="flex-1 relative">
+                                                      <input 
+                                                          type="text" 
+                                                          value={opt} 
+                                                          onChange={(e) => {
+                                                              const newOpts = [...(selectedField.options || [])];
+                                                              newOpts[i] = e.target.value;
+                                                              updateField(selectedField.id, { options: newOpts });
+                                                          }}
+                                                          className="w-full p-2 rounded border border-black/10 dark:border-white/10 bg-transparent text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                                                          placeholder={`Option ${i + 1}`}
+                                                      />
+                                                  </div>
                                                   <button 
                                                       onClick={() => {
                                                           const newOpts = selectedField.options?.filter((_, idx) => idx !== i);
                                                           updateField(selectedField.id, { options: newOpts });
                                                       }}
-                                                      className="text-red-500 hover:bg-red-50 p-1 rounded"
+                                                      className="size-7 flex items-center justify-center text-black/30 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors opacity-0 group-hover:opacity-100"
+                                                      title="Remove Option"
                                                   >
                                                       <span className="material-symbols-outlined text-sm">close</span>
                                                   </button>
                                               </div>
                                           ))}
                                           <button 
-                                              onClick={() => updateField(selectedField.id, { options: [...(selectedField.options || []), 'New Option'] })}
-                                              className="text-xs font-bold text-primary hover:underline text-left mt-1"
+                                              onClick={() => updateField(selectedField.id, { options: [...(selectedField.options || []), `Option ${(selectedField.options?.length || 0) + 1}`] })}
+                                              className="mt-2 flex items-center justify-center gap-1 w-full py-2 rounded-lg border border-dashed border-black/10 dark:border-white/10 hover:border-primary hover:text-primary hover:bg-primary/5 text-xs font-bold text-black/50 dark:text-white/50 transition-all"
                                           >
-                                              + Add Option
+                                              <span className="material-symbols-outlined text-sm">add</span> Add Option
                                           </button>
                                       </div>
                                   </div>
