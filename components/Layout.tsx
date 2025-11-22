@@ -256,9 +256,14 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
               <div className="flex flex-col gap-3">
                   <h4 className="font-bold">Our Platforms</h4>
-                  <Link to="/" className="text-sm text-black/60 dark:text-white/60 hover:text-primary">Web Portal</Link>
-                  <span className="text-sm text-black/40 dark:text-white/40 cursor-not-allowed" title="Coming Soon">iOS App (Soon)</span>
-                  <span className="text-sm text-black/40 dark:text-white/40 cursor-not-allowed" title="Coming Soon">Android App (Soon)</span>
+                  <a href="https://regalnetwork.online" target="_blank" rel="noopener noreferrer" className="text-sm text-black/60 dark:text-white/60 hover:text-primary flex items-center gap-1">
+                      Regal Network
+                      <span className="material-symbols-outlined text-[10px]">open_in_new</span>
+                  </a>
+                  <a href="https://meet.regalnetwork.online/" target="_blank" rel="noopener noreferrer" className="text-sm text-black/60 dark:text-white/60 hover:text-primary flex items-center gap-1">
+                      Regal Meeting
+                      <span className="material-symbols-outlined text-[10px]">open_in_new</span>
+                  </a>
               </div>
 
               <div className="flex flex-col gap-3">
@@ -276,7 +281,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               </div>
           </div>
           <div className="max-w-7xl mx-auto mt-12 pt-8 border-t border-black/10 dark:border-white/10 text-center text-sm text-black/40 dark:text-white/40">
-              © {new Date().getFullYear()} Regal Forms. All rights reserved.
+              © {new Date().getFullYear()} Regal Forms, Regal Network Technologies. All rights reserved.
           </div>
       </footer>
     </div>

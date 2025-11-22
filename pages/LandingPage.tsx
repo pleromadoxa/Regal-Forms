@@ -5,6 +5,34 @@ import { Link } from 'react-router-dom';
 const LandingPage: React.FC = () => {
   return (
     <div className="w-full overflow-hidden">
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideInRight {
+          from { opacity: 0; transform: translateX(50px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-10px); }
+        }
+        .animate-fade-in {
+          animation: fadeIn 0.8s ease-out forwards;
+        }
+        .animate-slide-in {
+            animation: slideInRight 0.8s ease-out forwards;
+        }
+        .animate-float {
+            animation: float 6s ease-in-out infinite;
+        }
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+        .delay-200 { animation-delay: 0.2s; }
+      `}</style>
+
       {/* Hero Section */}
       <div className="relative w-full bg-background-light dark:bg-background-dark pt-20 pb-16 sm:pt-32 sm:pb-24 overflow-hidden">
         {/* Background Effects */}
@@ -59,40 +87,103 @@ const LandingPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Right Visual (3D Illustration) */}
+            {/* Right Visual (Vector Form Illustration) */}
             <div className="w-full lg:w-1/2 perspective-1000 animate-slide-in delay-200 opacity-0" style={{ animationFillMode: 'forwards' }}>
-                <div className="relative w-full aspect-square max-w-[600px] mx-auto flex items-center justify-center">
-                    <div className="relative z-10 transform hover:scale-105 transition-transform duration-700 ease-out w-full h-full p-4">
-                         {/* Verified High-Quality 3D Abstract Image */}
-                         <img 
-                             src="https://images.unsplash.com/photo-1634152962476-4b8a00e1915c?q=80&w=1000&auto=format&fit=crop" 
-                             alt="3D Form Abstract" 
-                             className="w-full h-full object-contain drop-shadow-2xl rounded-3xl"
-                             loading="eager"
-                         />
-                         
-                         {/* Floating Badge Overlay 1 */}
-                         <div className="absolute bottom-10 -left-2 sm:-left-6 bg-white/90 dark:bg-black/80 p-4 rounded-xl shadow-2xl border border-white/20 backdrop-blur-md flex items-center gap-4 animate-bounce" style={{ animationDuration: '4s' }}>
-                              <div className="size-10 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center">
-                                  <span className="material-symbols-outlined">check_circle</span>
-                              </div>
-                              <div>
-                                  <div className="text-xs font-bold text-black/50 dark:text-white/50 uppercase">Efficiency</div>
-                                  <div className="text-base font-bold text-black dark:text-white">Boosted by 200%</div>
-                              </div>
-                         </div>
-                         
-                         {/* Floating Badge Overlay 2 */}
-                         <div className="absolute top-10 -right-2 sm:-right-6 bg-white/90 dark:bg-black/80 p-3 rounded-lg shadow-xl border border-white/20 backdrop-blur-md animate-pulse" style={{ animationDuration: '3s' }}>
-                              <div className="flex items-center gap-2">
-                                <div className="size-2 rounded-full bg-red-500 animate-ping"></div>
-                                <span className="text-xs font-bold">Live Analytics</span>
-                              </div>
-                         </div>
+                <div className="relative w-full aspect-square max-w-[600px] mx-auto flex items-center justify-center animate-float">
+                    
+                    <div className="relative z-10 w-full h-full flex items-center justify-center p-4 sm:p-10">
+                        {/* Vector Form Card */}
+                        <div className="relative w-full max-w-md bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-2xl border border-black/5 dark:border-white/10 overflow-hidden transform rotate-[-6deg] hover:rotate-0 transition-all duration-700 ease-out group">
+                            
+                            {/* Form Header */}
+                            <div className="h-14 bg-white dark:bg-[#222] border-b border-black/5 dark:border-white/5 flex items-center px-6 gap-2">
+                                <div className="flex gap-1.5">
+                                    <div className="w-3 h-3 rounded-full bg-red-400/80"></div>
+                                    <div className="w-3 h-3 rounded-full bg-yellow-400/80"></div>
+                                    <div className="w-3 h-3 rounded-full bg-green-400/80"></div>
+                                </div>
+                                <div className="flex-1 flex justify-center">
+                                     <div className="h-2 w-24 bg-black/5 dark:bg-white/10 rounded-full"></div>
+                                </div>
+                            </div>
+
+                            {/* Form Body */}
+                            <div className="p-8 flex flex-col gap-6 bg-gradient-to-b from-white to-gray-50 dark:from-[#1a1a1a] dark:to-[#151515]">
+                                
+                                {/* Field 1 */}
+                                <div className="space-y-2">
+                                    <div className="h-2.5 w-20 bg-black/10 dark:bg-white/10 rounded-full"></div>
+                                    <div className="h-10 w-full bg-white dark:bg-black/20 border border-black/5 dark:border-white/5 rounded-lg shadow-sm"></div>
+                                </div>
+
+                                 {/* Field 2 */}
+                                <div className="space-y-2">
+                                    <div className="h-2.5 w-32 bg-black/10 dark:bg-white/10 rounded-full"></div>
+                                     <div className="flex gap-2">
+                                         <div className="h-10 flex-1 bg-white dark:bg-black/20 border border-black/5 dark:border-white/5 rounded-lg shadow-sm"></div>
+                                         <div className="h-10 flex-1 bg-white dark:bg-black/20 border border-black/5 dark:border-white/5 rounded-lg shadow-sm"></div>
+                                     </div>
+                                </div>
+
+                                {/* Field 3 (Checkboxes) */}
+                                <div className="space-y-3">
+                                    <div className="h-2.5 w-24 bg-black/10 dark:bg-white/10 rounded-full"></div>
+                                    <div className="flex items-center gap-3">
+                                         <div className="w-5 h-5 rounded border border-primary bg-primary/10 flex items-center justify-center text-primary">
+                                             <span className="material-symbols-outlined text-sm font-bold">check</span>
+                                         </div>
+                                         <div className="h-2 w-40 bg-black/5 dark:bg-white/5 rounded-full"></div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                         <div className="w-5 h-5 rounded border border-black/10 dark:border-white/10"></div>
+                                         <div className="h-2 w-32 bg-black/5 dark:bg-white/5 rounded-full"></div>
+                                    </div>
+                                </div>
+
+                                {/* Submit Button */}
+                                <div className="pt-4">
+                                    <div className="h-12 w-full bg-primary rounded-xl shadow-lg shadow-primary/20 flex items-center justify-center transform group-hover:scale-[1.02] transition-transform">
+                                         <div className="h-2.5 w-24 bg-white/90 rounded-full"></div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        {/* Floating Badge: AI Gen */}
+                        <div className="absolute top-20 -right-2 sm:right-0 md:-right-6 bg-white dark:bg-[#252525] p-3 sm:p-4 rounded-xl shadow-xl border border-white/20 animate-bounce z-20 backdrop-blur-md" style={{ animationDuration: '3.5s' }}>
+                            <div className="flex items-center gap-3">
+                                 <div className="size-10 rounded-full bg-gradient-to-br from-secondary to-purple-600 flex items-center justify-center text-white shadow-lg">
+                                     <span className="material-symbols-outlined">auto_awesome</span>
+                                 </div>
+                                 <div>
+                                     <div className="h-2 w-16 bg-black/20 dark:bg-white/20 rounded-full mb-1.5"></div>
+                                     <div className="h-2 w-8 bg-secondary/50 rounded-full"></div>
+                                 </div>
+                            </div>
+                        </div>
+
+                         {/* Floating Badge: Analytics */}
+                         <div className="absolute bottom-20 -left-2 sm:left-0 md:-left-6 bg-white dark:bg-[#252525] p-3 sm:p-4 rounded-xl shadow-xl border border-white/20 animate-bounce z-20 backdrop-blur-md" style={{ animationDuration: '4.5s', animationDelay: '1s' }}>
+                            <div className="flex flex-col gap-2">
+                                 <div className="flex items-center gap-2 mb-1">
+                                     <div className="size-6 rounded bg-green-100 dark:bg-green-900/30 text-green-500 flex items-center justify-center">
+                                        <span className="material-symbols-outlined text-sm font-bold">trending_up</span>
+                                     </div>
+                                     <div className="h-2 w-20 bg-black/20 dark:bg-white/20 rounded-full"></div>
+                                 </div>
+                                 <div className="flex items-end gap-1 h-8 pl-1">
+                                     <div className="w-2 bg-green-500/30 h-3 rounded-t"></div>
+                                     <div className="w-2 bg-green-500/50 h-5 rounded-t"></div>
+                                     <div className="w-2 bg-green-500/70 h-4 rounded-t"></div>
+                                     <div className="w-2 bg-green-500 h-8 rounded-t"></div>
+                                 </div>
+                            </div>
+                        </div>
                     </div>
                     
                     {/* Decorative Background Blurs */}
-                    <div className="absolute inset-0 bg-gradient-to-tr from-primary/40 to-secondary/40 rounded-full blur-[80px] -z-10 opacity-60 scale-90"></div>
+                    <div className="absolute inset-0 bg-gradient-to-tr from-primary/30 to-secondary/30 rounded-full blur-[80px] -z-10 opacity-60 scale-90"></div>
                 </div>
             </div>
 
