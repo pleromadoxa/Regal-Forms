@@ -9,6 +9,7 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp, getDoc, collection, addDoc } from 'firebase/firestore';
 import { auth, googleProvider, db } from '../services/firebase';
+import { sendEmail, generateEmailTemplate } from '../services/emailService';
 
 interface SignUpPageProps {
   isLogin?: boolean;
@@ -74,8 +75,27 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ isLogin = false }) => {
                       read: false,
                       link: '/create'
                   });
+
+                  // Send Welcome Email
+                  if (user.email) {
+                      const emailHtml = generateEmailTemplate(
+                          "Welcome to Regal Forms! 🚀",
+                          `<p>Hi ${name || 'there'},</p>
+                           <p>We are thrilled to welcome you to Regal Forms. You have just taken the first step towards creating powerful, AI-driven forms.</p>
+                           <p><strong>Here is what you can do next:</strong></p>
+                           <ul>
+                               <li>Create your first form using our drag-and-drop builder.</li>
+                               <li>Try our AI generation feature to build forms in seconds.</li>
+                               <li>Connect your forms to tools like Google Sheets and Slack.</li>
+                           </ul>`,
+                          "https://www.regalforms.xyz/#/create",
+                          "Start Building"
+                      );
+                      await sendEmail(user.email, "Welcome to Regal Forms!", emailHtml);
+                  }
+
               } catch (noteError) {
-                  console.error("Error creating welcome notification:", noteError);
+                  console.error("Error creating welcome notification/email:", noteError);
               }
           }
       } catch (e: any) {

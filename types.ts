@@ -67,6 +67,7 @@ export interface GeneratedForm {
   submitButtonText?: string;
   successMessage?: string;
   slug?: string; // Custom URL slug
+  ownerEmail?: string; // Email of the form creator for notifications
   
   // Design & Branding
   theme?: FormTheme;

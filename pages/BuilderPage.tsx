@@ -8,6 +8,7 @@ import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { COUNTRIES, PHONE_CODES } from '../data/formResources';
+import { sendEmail, generateEmailTemplate } from '../services/emailService';
 
 const FIELD_TYPES = [
   { type: 'text', label: 'Short Text', icon: 'short_text' },
@@ -181,9 +182,13 @@ const BuilderPage: React.FC = () => {
   const [customSlug, setCustomSlug] = useState('');
   const [slugStatus, setSlugStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showClearModal, setShowClearModal] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
   const [aiToolLoading, setAiToolLoading] = useState(false);
   const [uploadingAsset, setUploadingAsset] = useState<'logo' | 'cover' | null>(null);
+
+  // Initialization ref to prevent overwriting state on re-renders
+  const initRef = useRef(false);
 
   // Refs for file inputs
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -194,6 +199,9 @@ const BuilderPage: React.FC = () => {
 
   // Init from location state or localStorage
   useEffect(() => {
+      // If already initialized, don't run again to prevent overwriting current changes
+      if (initRef.current) return;
+
       if (location.state?.formData) {
           setForm(location.state.formData);
           if (location.state.formId) {
@@ -203,6 +211,7 @@ const BuilderPage: React.FC = () => {
           if(location.state.formData.fields.length > 0) {
               setActiveTab('tools');
           }
+          initRef.current = true;
       } else if (location.state?.template) {
           // Init from Template - Deep clone to avoid reference issues
           const templateData = JSON.parse(JSON.stringify(location.state.template));
@@ -211,6 +220,7 @@ const BuilderPage: React.FC = () => {
           if (templateData.fields && templateData.fields.length > 0) {
               setActiveTab('tools');
           }
+          initRef.current = true;
       } else {
           // Fallback: Check localStorage for draft
           const savedDraft = localStorage.getItem('builder_draft');
@@ -229,8 +239,9 @@ const BuilderPage: React.FC = () => {
               // Initialize blank form if absolutely no state found
               initFormIfNeeded();
           }
+          initRef.current = true;
       }
-  }, [location.state]); // Ensure it runs when location state changes (e.g. navigating from templates)
+  }, [location.state]); 
 
   // Auto-save draft to localStorage
   useEffect(() => {
@@ -418,12 +429,16 @@ const BuilderPage: React.FC = () => {
       updateField(fieldId, { logic: newLogic });
   };
 
-  const clearAllFields = () => {
+  // Open the confirmation modal instead of immediate clear
+  const handleClearRequest = () => {
+      setShowClearModal(true);
+  };
+
+  const confirmClearFields = () => {
       if (!form) return;
-      if (window.confirm("Are you sure you want to clear all fields? This cannot be undone.")) {
-          setForm({ ...form, fields: [] });
-          setSelectedId('form-settings');
-      }
+      setForm({ ...form, fields: [] });
+      setSelectedId('form-settings');
+      setShowClearModal(false);
   };
 
   const duplicateField = (id: string) => {
@@ -470,7 +485,8 @@ const BuilderPage: React.FC = () => {
               slug: finalSlug,
               status: targetStatus,
               updatedAt: timestamp,
-              userId: currentUser.uid
+              userId: currentUser.uid,
+              ownerEmail: currentUser.email // IMPORTANT: Save email for notifications
           };
           
           if (!formId) {
@@ -490,6 +506,19 @@ const BuilderPage: React.FC = () => {
           } else {
               setShowShareModal(true);
               localStorage.removeItem('builder_draft'); 
+              
+              // Send Confirmation Email for Published Forms
+              if (currentUser.email) {
+                  const emailHtml = generateEmailTemplate(
+                      "Form Published Successfully! 🎉",
+                      `<p>Your form <strong>${form.title}</strong> is live and ready to collect responses.</p>
+                       <p>You can share it using the link below:</p>
+                       <p><a href="https://www.regalforms.xyz/#/form/${finalSlug}">https://www.regalforms.xyz/#/form/${finalSlug}</a></p>`,
+                      `https://www.regalforms.xyz/#/form/${finalSlug}`,
+                      "View Form"
+                  );
+                  await sendEmail(currentUser.email, `Form Published: ${form.title}`, emailHtml);
+              }
           }
       } catch (e: any) {
           console.error(e);
@@ -626,7 +655,7 @@ const BuilderPage: React.FC = () => {
                               </div>
                           ))}
                       </div>
-                      <button onClick={clearAllFields} className="mt-6 w-full py-2 text-xs font-bold text-red-500 border border-red-500/20 rounded-lg hover:bg-red-500/10 transition-colors">
+                      <button onClick={handleClearRequest} className="mt-6 w-full py-2 text-xs font-bold text-red-500 border border-red-500/20 rounded-lg hover:bg-red-500/10 transition-colors">
                           Clear All Fields
                       </button>
                   </div>
@@ -719,7 +748,7 @@ const BuilderPage: React.FC = () => {
                                   <label className="font-bold text-sm opacity-90 pointer-events-none">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
                                   {selectedId === field.id && (
                                       <div className="flex items-center gap-1 bg-white dark:bg-black shadow-sm rounded-lg p-1 absolute right-2 top-2 z-10">
-                                          <button onClick={(e) => {e.stopPropagation(); handleAiOptimizeLabel(field.id, field.label)}} className="p-1 hover:bg-black/5 rounded text-primary" title="AI Optimize Label"><span className="material-symbols-outlined text-sm">auto_awesome</span></button>
+                                          <button onClick={(e) => {e.stopPropagation(); handleAiOptimizeLabel(field.id, field.label)}} className="p-1 hover:bg-black/5 rounded text-primary" title="AI Rewrite"><span className="material-symbols-outlined text-sm">auto_awesome</span></button>
                                           <button onClick={(e) => {e.stopPropagation(); duplicateField(field.id)}} className="p-1 hover:bg-black/5 rounded" title="Duplicate"><span className="material-symbols-outlined text-sm">content_copy</span></button>
                                           <button onClick={(e) => {e.stopPropagation(); removeField(field.id)}} className="p-1 hover:bg-red-50 text-red-500 rounded" title="Delete"><span className="material-symbols-outlined text-sm">delete</span></button>
                                       </div>
@@ -880,7 +909,7 @@ const BuilderPage: React.FC = () => {
                                       ) : (
                                           <div className="h-12 w-12 bg-black/5 rounded flex items-center justify-center text-xs text-center p-1">No Logo</div>
                                       )}
-                                      <label className="flex-1 cursor-pointer bg-black/5 hover:bg-black/10 py-2 px-4 rounded text-xs font-bold text-center transition-colors">
+                                      <label className="flex-1 cursor-pointer bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 py-2 px-4 rounded text-xs font-bold text-center transition-colors">
                                           Upload Logo
                                           <input type="file" className="hidden" accept="image/*" ref={logoInputRef} onChange={(e) => handleAssetUpload(e, 'logo')} />
                                       </label>
@@ -899,7 +928,7 @@ const BuilderPage: React.FC = () => {
                                   ) : (
                                       <div className="h-24 w-full bg-black/5 rounded flex items-center justify-center text-xs opacity-50">No Cover Image</div>
                                   )}
-                                  <label className="cursor-pointer bg-black/5 hover:bg-black/10 py-2 px-4 rounded text-xs font-bold text-center transition-colors">
+                                  <label className="cursor-pointer bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 py-2 px-4 rounded text-xs font-bold text-center transition-colors">
                                       Upload Cover
                                       <input type="file" className="hidden" accept="image/*" ref={coverInputRef} onChange={(e) => handleAssetUpload(e, 'cover')} />
                                   </label>
@@ -934,12 +963,12 @@ const BuilderPage: React.FC = () => {
                               
                               <div className="flex flex-col gap-2">
                                   <label className="text-xs font-bold opacity-70">Border Radius</label>
-                                  <div className="flex gap-1 p-1 bg-black/5 rounded-lg">
+                                  <div className="flex gap-1 p-1 bg-black/5 dark:bg-white/5 rounded-lg">
                                       {['none', 'sm', 'md', 'lg', 'full'].map((r) => (
                                           <button 
                                               key={r} 
                                               onClick={() => updateTheme({ borderRadius: r as any })}
-                                              className={`flex-1 py-1 rounded text-[10px] uppercase font-bold ${form?.theme?.borderRadius === r ? 'bg-white shadow-sm text-black' : 'text-black/50 hover:text-black'}`}
+                                              className={`flex-1 py-1 rounded text-[10px] uppercase font-bold ${form?.theme?.borderRadius === r ? 'bg-white shadow-sm text-black' : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'}`}
                                           >
                                               {r}
                                           </button>
@@ -949,12 +978,12 @@ const BuilderPage: React.FC = () => {
                               
                                <div className="flex flex-col gap-2">
                                   <label className="text-xs font-bold opacity-70">Font Family</label>
-                                  <div className="flex gap-1 p-1 bg-black/5 rounded-lg">
+                                  <div className="flex gap-1 p-1 bg-black/5 dark:bg-white/5 rounded-lg">
                                       {['sans', 'serif', 'mono'].map((f) => (
                                           <button 
                                               key={f} 
                                               onClick={() => updateTheme({ fontFamily: f as any })}
-                                              className={`flex-1 py-1 rounded text-[10px] uppercase font-bold ${form?.theme?.fontFamily === f ? 'bg-white shadow-sm text-black' : 'text-black/50 hover:text-black'}`}
+                                              className={`flex-1 py-1 rounded text-[10px] uppercase font-bold ${form?.theme?.fontFamily === f ? 'bg-white shadow-sm text-black' : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'}`}
                                           >
                                               {f}
                                           </button>
@@ -1056,7 +1085,7 @@ const BuilderPage: React.FC = () => {
                                                           const newOpts = selectedField.options?.filter((_, idx) => idx !== i);
                                                           updateField(selectedField.id, { options: newOpts });
                                                       }}
-                                                      className="size-7 flex items-center justify-center text-black/30 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors opacity-0 group-hover:opacity-100"
+                                                      className="size-7 flex items-center justify-center text-black/30 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
                                                       title="Remove Option"
                                                   >
                                                       <span className="material-symbols-outlined text-sm">close</span>
@@ -1228,6 +1257,35 @@ const BuilderPage: React.FC = () => {
                       <div className="pt-4 border-t border-black/10 dark:border-white/10 text-center">
                            <Link to="/admin" className="text-primary text-sm font-bold hover:underline">Return to Dashboard</Link>
                       </div>
+                  </div>
+              </div>
+          </div>
+      )}
+
+      {/* Clear Confirmation Modal */}
+      {showClearModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
+              <div className="bg-white dark:bg-[#1e1e1e] rounded-xl shadow-2xl max-w-sm w-full p-6 border border-black/10 dark:border-white/10">
+                  <div className="size-12 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 flex items-center justify-center mb-4">
+                      <span className="material-symbols-outlined text-2xl">warning</span>
+                  </div>
+                  <h3 className="text-xl font-black mb-2">Clear All Fields?</h3>
+                  <p className="text-black/60 dark:text-white/60 mb-6 text-sm">
+                      This will remove all form fields. This action cannot be undone. Are you sure you want to start over?
+                  </p>
+                  <div className="flex gap-3">
+                      <button 
+                        onClick={() => setShowClearModal(false)} 
+                        className="flex-1 py-3 rounded-lg font-bold bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+                      >
+                          Cancel
+                      </button>
+                      <button 
+                        onClick={confirmClearFields}
+                        className="flex-1 py-3 rounded-lg font-bold bg-red-500 text-white hover:bg-red-600 transition-colors"
+                      >
+                          Yes, Clear
+                      </button>
                   </div>
               </div>
           </div>

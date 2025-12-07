@@ -264,6 +264,10 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                       Regal Meeting
                       <span className="material-symbols-outlined text-[10px]">open_in_new</span>
                   </a>
+                  <a href="https://www.regalwork.space" target="_blank" rel="noopener noreferrer" className="text-sm text-black/60 dark:text-white/60 hover:text-primary flex items-center gap-1">
+                      Regal Workspace
+                      <span className="material-symbols-outlined text-[10px]">open_in_new</span>
+                  </a>
               </div>
 
               <div className="flex flex-col gap-3">

@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../services/firebase';
+import { sendEmail, generateEmailTemplate } from '../services/emailService';
 
 // --- Careers Page ---
 export const CareersPage: React.FC = () => {
@@ -63,6 +64,38 @@ export const ContactPage: React.FC = () => {
               submittedAt: serverTimestamp(),
               status: 'new'
           });
+
+          // 1. Send Email to Admin/Support
+          const adminEmailHtml = generateEmailTemplate(
+              `New Contact Message from ${name}`,
+              `<p>You have received a new message from the contact form.</p>
+               <ul>
+                 <li><strong>Name:</strong> ${name}</li>
+                 <li><strong>Email:</strong> ${email}</li>
+               </ul>
+               <p><strong>Message:</strong></p>
+               <div style="background: #f5f5f5; padding: 10px; border-left: 3px solid #f27f0d;">
+                 ${message.replace(/\n/g, '<br/>')}
+               </div>`,
+              "https://www.regalforms.xyz/#/admin",
+              "View in Admin Console"
+          );
+          await sendEmail('support@regalforms.xyz', `Contact: ${name}`, adminEmailHtml);
+
+          // 2. Send Auto-Reply to User
+          const userReplyHtml = generateEmailTemplate(
+              `We received your message, ${name}!`,
+              `<p>Thank you for contacting Regal Forms. We have received your message and will get back to you as soon as possible.</p>
+               <p><strong>Your Message:</strong></p>
+               <div style="background: #f5f5f5; padding: 10px; font-style: italic;">
+                 "${message.replace(/\n/g, '<br/>')}"
+               </div>
+               <p>If you have any urgent questions, check out our Help Center.</p>`,
+              "https://www.regalforms.xyz/#/help",
+              "Visit Help Center"
+          );
+          await sendEmail(email, "We received your message - Regal Forms", userReplyHtml);
+
           setStatus('success');
           setName('');
           setEmail('');
